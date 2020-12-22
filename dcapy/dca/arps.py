@@ -8,10 +8,46 @@ from typing import Union
 from .dca import DCA 
 
 
-def arps_exp(qi,di,b,time_array):
+def arps_exp(qi:float,di:float,b:float,time_array:np.ndarray)->np.ndarray:
+    """arps_exp [Calculate the rate of Exponential, b=0, Arps Declination]
+
+    Parameters
+    ----------
+    qi : float
+        [Initial rate]
+    di : float
+        [Initial Declination]
+    b : float
+        [Arps Coeficient]
+    time_array : np.ndarray
+        [Array of numbers that represents the periods of timeto calculate rate]
+
+    Returns
+    -------
+    np.ndarray
+        [Array of the rates calculated for the time_array]
+    """
     return qi*np.exp(-di*time_array)
 
-def arps_hyp(qi,di,b,time_array):
+def arps_hyp(qi:float,di:float,b:float,time_array:np.ndarray)->np.ndarray:
+    """arps_exp [Calculate the rate of either Armonic or hyperbolic , b>0, Arps Declination]
+
+    Parameters
+    ----------
+    qi : float
+        [Initial rate]
+    di : float
+        [Initial Declination]
+    b : float
+        [Arps Coeficient]
+    time_array : np.ndarray
+        [Array of numbers that represents the periods of timeto calculate rate]
+
+    Returns
+    -------
+    np.ndarray
+        [Array of the rates calculated for the time_array]
+    """
     return qi/np.power(1+b*di*time_array,1/b)
 
 #Arps Decline Curve
