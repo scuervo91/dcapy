@@ -453,7 +453,7 @@ class Arps(DCA):
             except Exception as e:
                 print(e)
                 _x = x.astype(float)
-            popt, pcov = curve_fit(cost_function, _x[total_filter==0], y[total_filter==0], bounds=(0.0, [np.inf, np.inf]))
+            popt, pcov = curve_fit(cost_function, _x[total_filter==0]-_x[total_filter==0][0], y[total_filter==0], bounds=(0.0, [np.inf, np.inf]))
    
             self.qi = popt[0]
             self.di = popt[1]
