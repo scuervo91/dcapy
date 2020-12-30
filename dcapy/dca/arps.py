@@ -437,9 +437,14 @@ class Arps(DCA):
                 print(e)
                 _x = x.astype(float)
 
+            #Apply the Filters
+            x_filter = _x[total_filter==0]-_x[total_filter==0][0]
+            y_filter = y[total_filter==0]
             
-            popt, pcov = curve_fit(cost_function, _x[total_filter==0]-_x[total_filter==0][0], y[total_filter==0], bounds=(0.0, [np.inf, np.inf, 1]))
+            #Optimization process
+            popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=(0.0, [np.inf, np.inf, 1]))
             
+            #Assign the results to the Class
             self.qi = popt[0]
             self.di = popt[1]
             self.b = popt[2]
@@ -453,12 +458,19 @@ class Arps(DCA):
             except Exception as e:
                 print(e)
                 _x = x.astype(float)
-            popt, pcov = curve_fit(cost_function, _x[total_filter==0]-_x[total_filter==0][0], y[total_filter==0], bounds=(0.0, [np.inf, np.inf]))
+             
+            #Apply the Filters   
+            x_filter = _x[total_filter==0]-_x[total_filter==0][0]
+            y_filter = y[total_filter==0]
+            
+            #Optimization process
+            popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=(0.0, [np.inf, np.inf]))
    
             self.qi = popt[0]
             self.di = popt[1]
             self.ti = x[total_filter==0][0]
             self.b = b
+            
         return pd.DataFrame({'time':x,'rate':y,'filter':total_filter})
         
         
