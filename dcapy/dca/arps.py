@@ -10,7 +10,7 @@ from .dca import DCA
 from .timeconverter import list_freq, converter_factor, time_converter_matrix
 from ..filters import zscore
 
-def arps_exp(time_array:np.ndarray,qi:float,di:float)->np.ndarray:
+def arps_exp_rate(time_array:np.ndarray,qi:float,di:float)->np.ndarray:
     """arps_exp Calculate the rate of Exponential, b=0, Arps Declination
 
     Parameters
@@ -27,9 +27,30 @@ def arps_exp(time_array:np.ndarray,qi:float,di:float)->np.ndarray:
     np.ndarray
         Array of the rates calculated for the time_array
     """
+    time_array = np.atleast_1d(time_array)
     return qi*np.exp(-di*time_array)
 
-def arps_hyp(time_array:np.ndarray,qi:float,di:float,b:float)->np.ndarray:
+def arps_exp_cumulative(time_array:np.ndarray,qi:float,di:float,ti=0)->np.ndarray:
+    """arps_exp Calculate the Cumulative of Exponential, b=0, Arps Declination
+
+    Parameters
+    ----------
+    qi : float
+        Initial rate
+    di : float
+        Initial Declination
+    time_array : np.ndarray
+        Array of numbers that represents the periods of timeto calculate rate
+
+    Returns
+    -------
+    np.ndarray
+        Array of the Cumulative calculated for the time_array
+    """
+    time_array = np.atleast_1d(time_array)
+    return (qi/di)*(np.exp(-di*ti) - np.exp(-di*time_array))
+
+def arps_hyp_rate(time_array:np.ndarray,qi:float,di:float,b:float)->np.ndarray:
     """arps_exp Calculate the rate of either Armonic or hyperbolic , b>0, Arps Declination
 
     Parameters
@@ -48,7 +69,55 @@ def arps_hyp(time_array:np.ndarray,qi:float,di:float,b:float)->np.ndarray:
     np.ndarray
         Array of the rates calculated for the time_array
     """
+    time_array = np.atleast_1d(time_array)
     return qi/np.power(1+b*di*time_array,1/b)
+
+def arps_hyp_cumulative(time_array:np.ndarray,qi:float,di:float,b:float,ti=0)->np.ndarray:
+    """arps_exp Calculate the cumulative of hyperbolic , 0<b<1, Arps Declination
+
+    Parameters
+    ----------
+    qi : float
+        Initial rate
+    di : float
+        Initial Declination
+    b : float
+        Arps Coeficient
+    time_array : np.ndarray
+        Array of numbers that represents the periods of timeto calculate rate
+
+    Returns
+    -------
+    np.ndarray
+        Array of the cumulative calculated for the time_array
+    """
+    time_array = np.atleast_1d(time_array)
+    f = qi/(di*(b-1))
+    g = np.power(b*di*time_array+1,(b-1)/b)
+    h = np.power(b*di*ti+1,(b-1)/b)
+    return f*(g-h)
+
+def arps_arm_cumulative(time_array:np.ndarray,qi:float,di:float,b:float,ti=0)->np.ndarray:
+    """arps_exp Calculate the cumulative of Armonic , b=1, Arps Declination
+
+    Parameters
+    ----------
+    qi : float
+        Initial rate
+    di : float
+        Initial Declination
+    b : float
+        Arps Coeficient
+    time_array : np.ndarray
+        Array of numbers that represents the periods of timeto calculate rate
+
+    Returns
+    -------
+    np.ndarray
+        Array of the cumulative calculated for the time_array
+    """
+    time_array = np.atleast_1d(time_array)
+    return (qi/di)*np.log((di*time_array + 1)/(di*ti+1))
 
 #Arps Decline Curve
 def arps_forecast(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
@@ -86,6 +155,7 @@ def arps_forecast(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],
             params_dict[i] = params_dict[i].reshape(-1,1)
         else:
             try:
+                # TODO Review atleast2D
                params_dict[i] = np.atleast_1d(params_dict[i]).reshape(-1,1)
             except Exception as e:
                 print(e)
@@ -95,12 +165,12 @@ def arps_forecast(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],
     
     f = np.where(
         params_dict['b']==0,
-        arps_exp(
+        arps_exp_rate(
             time_diff,
             params_dict['qi'],
             params_dict['di'],
         ),
-        arps_hyp(
+        arps_hyp_rate(
             time_diff,
             params_dict['qi'],
             params_dict['di'],
@@ -111,7 +181,59 @@ def arps_forecast(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],
     
     return np.squeeze(f.T)
 
+def arps_cumulative(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
+                 b:Union[np.ndarray,float],
+                 ti:Union[np.ndarray,float]=0.0)->np.ndarray:
+    """arps_cumulative Estimate the cumulative forecast for the time_array  given the Arps Parameters
 
+    Parameters
+    ----------
+    qi : float
+        Initial Rate at ti
+    di : float
+        Decline rate
+    b : float
+        description
+    time_array : Union[np.ndarray, list]
+        array of times to make forecast
+    ti : float, optional
+        Time of the initial rate qi, by default 0.0
+
+    Returns
+    -------
+    np.ndarray
+        Production cumulative forecast in a numpy array
+    """
+    params_dict = {
+    'qi': qi,
+    'di': di,
+    'b': b,
+    'ti': ti
+    }
+    #print(params_dict)
+    for i in params_dict:
+        if isinstance(params_dict[i],np.ndarray):
+            params_dict[i] = params_dict[i].reshape(-1,1)
+        else:
+            try:
+                # TODO Review atleast2D
+               params_dict[i] = np.atleast_1d(params_dict[i]).reshape(-1,1)
+            except Exception as e:
+                print(e)
+                raise
+    
+    time_diff = np.atleast_1d(time_array) - ti
+       
+    f = np.where(
+        params_dict['b']==0,
+        arps_exp_cumulative(time_diff,params_dict['qi'],params_dict['di']),
+        np.where(
+            params_dict['b']==1,
+            arps_arm_cumulative(time_diff,params_dict['qi'],params_dict['di'],params_dict['b']),
+            arps_hyp_cumulative(time_diff,params_dict['qi'],params_dict['di'],params_dict['b'])
+        ))
+      
+    return np.squeeze(f.T)
 
 def arps_rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
                  b:Union[np.ndarray,float], rate:Union[int,float,np.ndarray])->int:
@@ -143,13 +265,6 @@ def arps_rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
     return time_until.astype(int)
 
             
-# Dict of allowed di frequencies
-di_freq_dict = {
-    'A':365,
-    'M':30,
-    'D':1
-}
-
 class Arps(DCA):
     """Arps Arps decline curve Instance
 
@@ -166,7 +281,7 @@ class Arps(DCA):
     freq_di : str
         Frequency at with is reported the decline rate
 
-    Attributes
+    Methods
     ----------
     rate_time
         Estimate the time at which the Arps instance would reach the defined rate
@@ -360,7 +475,8 @@ class Arps(DCA):
                 time_range = time_range.loc[time_index]
                 
             _forecast = arps_forecast(time_array,self.qi,self.di*di_factor,self.b)
-            _forecast_df = pd.DataFrame({'rate':np.squeeze(_forecast)},index=time_range)
+            _cumulative = arps_cumulative(time_array,self.qi,self.di*di_factor,self.b)
+            _forecast_df = pd.DataFrame({'rate':np.squeeze(_forecast),'cumulative':np.squeeze(_cumulative)},index=time_array)
         else:
             assert all(isinstance(i,(int,float)) for i in [start,end])
             
@@ -371,13 +487,16 @@ class Arps(DCA):
             
             if rate_limit is not None:
                 time_limit = self.rate_time(rate_limit,freq=freq_input)
-                print(time_limit)
                 time_index = time_array<=time_limit
                 time_array = time_array[time_index]
         
             _forecast = arps_forecast(time_array,self.qi,self.di*di_factor,self.b,self.ti_n())
-        
-            _forecast_df = pd.DataFrame({'rate':np.squeeze(_forecast)},index=time_array)
+            #Cum converter. COnvert the rate on daily basis to the freq_input basis
+            # Example: If a rate of 5000 bbl/d is given and the user wanst to estimate
+            # the cumulative when the estimation is made in years the qi will be 1825000 bbl/year
+            cum_factor = converter_factor('D',freq_input)
+            _cumulative = arps_cumulative(time_array,self.qi*cum_factor,self.di*di_factor,self.b,self.ti_n())
+            _forecast_df = pd.DataFrame({'rate':np.squeeze(_forecast),'cumulative':np.squeeze(_cumulative)},index=time_array)
         
         return _forecast_df
     
