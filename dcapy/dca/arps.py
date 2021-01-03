@@ -5,6 +5,7 @@ import pandas as pd
 from datetime import datetime, date, timedelta
 from typing import Union
 from scipy.optimize import curve_fit
+import matplotlib.pyplot as plt
 #Local Imports
 from .dca import DCA 
 from .timeconverter import list_freq, converter_factor, time_converter_matrix
@@ -464,8 +465,8 @@ class Arps(DCA):
         
         if self.format() == 'date':
             assert all(isinstance(i,date) for i in [start,end])
-            time_range = pd.Series(pd.date_range(start=start, end=end, freq=freq_input))
-            time_array = time_range.apply(lambda x: x.toordinal()) - self.ti.toordinal()
+            time_range = pd.Series(pd.period_range(start=start, end=end, freq=freq_output))
+            time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()) - self.ti.toordinal()
 
             di_factor = converter_factor(self.freq_di,'D')
             if rate_limit is not None:
@@ -476,7 +477,7 @@ class Arps(DCA):
                 
             _forecast = arps_forecast(time_array,self.qi,self.di*di_factor,self.b)
             _cumulative = arps_cumulative(time_array,self.qi,self.di*di_factor,self.b)
-            _forecast_df = pd.DataFrame({'rate':np.squeeze(_forecast),'cumulative':np.squeeze(_cumulative)},index=time_array)
+            _forecast_df = pd.DataFrame({'rate':np.squeeze(_forecast),'cumulative':np.squeeze(_cumulative)},index=time_range)
         else:
             assert all(isinstance(i,(int,float)) for i in [start,end])
             
@@ -524,7 +525,7 @@ class Arps(DCA):
         Arps
             [description]
         """
-        
+        # TODO: Add the option to start the cumulative with an Initial Value different a 0
         #Check inputs
         x = df[time].values if isinstance(time,str) else time 
         y = df[rate].values if isinstance(rate,str) else rate
@@ -593,7 +594,93 @@ class Arps(DCA):
         return pd.DataFrame({'time':x,'rate':y,'filter':total_filter})
         
         
-        
+    def plot(self, start:Union[float,date]=None, end:Union[float,date]=None,
+             freq_input:str='D',freq_output:str='M',rate_limit:float=None,
+             np_limit:float=None,ax=None,rate_kw:dict={},cum_kw:dict={},
+             ad_kw:dict={},cum:bool=False,anomaly:float=False, **kwargs):
+        """plot. Make a Plot in a Matplotlib axis of the rate forecast. 
+         Optionally plot the cumulative curve in a second vertical axis.
+
+        Parameters
+        ----------
+        start :Union[float,date], optional
+            The first date at which the DataFrame will start. If not specified,
+            the Arps.ti parameter is used, by default None
+        end : Union[float,date], optional
+            The maximum date at which the DataFrame will end. if the resulting date
+            at which either econ_limit or np_limit reach the rate limit is beyond end_date,
+            the last date will be end_date, otherwise the date estimated, by default None
+        rate_limit : float, optional
+            Rate at which the forecast will stop, by default None
+        np_limit : float, optional
+            Cumulative volume at which the forecast will stop, by default None
+        freq_input : str, optional
+            Frequency at which the estimations will be performed. 
+            By default the forecast is estimated on daily basis. , by default 'D'
+        freq_output : str, optional
+            Frequency at which the forecast will be returned. 
+            by default the frequency will be on monthly basis, by default 'M'
+        ax : [type], optional
+            Matplotlib axes. If None it creates a new axes
+        rate_kw : dict, optional
+            Dictionary with the Matplotlib properties of the rate curve.
+            For example to change the color, width, style.
+        cum_kw : dict, optional
+            Dictionary with the Matplotlib properties of the rate curve.
+            For example to change the color, width, style.
+        ad_kw : dict, optional
+            Dictionary with the Matplotlib properties of the rate curve.
+            For example to change the color, width, style.
+        cum : bool, optional
+            If True it plots the cumulative curve
+        anomaly : float, optional
+            If True it plots the anomaly curve
+        """
+        f = self.forecast(start=start, end=end, 
+                            freq_input=freq_input,freq_output=freq_output,
+                            rate_limit=rate_limit, np_limit=np_limit)
+        #Create the Axex
+        dax= ax or plt.gca()
+
+        # Default kwargs for rate
+        def_rate_kw = {
+            'color': 'darkgreen',
+            'linestyle':'--',
+            'linewidth': 2
+        }
+        for (k,v) in def_rate_kw.items():
+            if k not in rate_kw:
+                rate_kw[k]=v
+
+        # Default kwargs for cum
+        def_cum_kw = {
+            'color': 'darkgreen',
+            'linestyle':'dotted',
+            'linewidth': 2
+        }
+        for (k,v) in def_cum_kw.items():
+            if k not in cum_kw:
+                cum_kw[k]=v
+
+        # Default kwargs for anomaly detection
+        def_ad_kw = {
+            'c': 'red',
+            's':40,
+            'marker': 'o'
+        }
+        for (k,v) in def_ad_kw.items():
+            if k not in ad_kw:
+                ad_kw[k]=v
+
+        #Plotting
+        time_axis = f.index.to_timestamp() if self.format()=='date' else f.index
+        dax.plot(time_axis,f['rate'],**rate_kw)   
+
+        if cum:
+            cumax=dax.twinx()
+            cumax.plot(time_axis,f['cumulative'],**cum_kw)  
+
+
                 
         
                 
