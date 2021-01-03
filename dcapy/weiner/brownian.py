@@ -86,9 +86,9 @@ class Weiner:
             assert isinstance(i,int)
         
         #Generate random time normalized
-        epsilon = self.generator.rvs(size=(processes,steps),
+        epsilon = self.generator.rvs(*self.arg_generator,size=(processes,steps),
                                      random_state=self.seed,
-                                     *self.arg_generator,**self.kw_generator)
+                                     **self.kw_generator)
 
         return epsilon
     
@@ -102,7 +102,9 @@ class Weiner:
         n_vector = np.linspace(min_x,max_x,processes)
         n_array = np.broadcast_to(n_vector,(steps,processes)).T
         
-        epsilon = self.generator.ppf(n_array,*self.arg_generator,**self.kw_generator)
+        epsilon = self.generator.ppf(n_array,
+                                     *self.arg_generator,
+                                     **self.kw_generator)
         
         return epsilon
         
@@ -128,7 +130,7 @@ class Weiner:
         #Weiner Process
         for n in range(processes):
             for t in range(1,steps):
-                w[n,t] = mu + w[n,t-1] + (epsilon[n,t]*np.sqrt(dt))
+                w[n,t] = w[n,t-1] + mu + (epsilon[n,t]*np.sqrt(dt))
                 
         return pd.DataFrame(w.T, index=range(steps),columns=range(processes))
     
