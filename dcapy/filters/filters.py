@@ -26,6 +26,7 @@ def zscore(x:np.ndarray,y:np.ndarray,thld:float=2)->np.ndarray:
     ## Assert x and y have the same shape
     assert x.shape == y.shape
     
+    #Create the array for filter
     index = np.zeros(x.shape)
     
     try:
