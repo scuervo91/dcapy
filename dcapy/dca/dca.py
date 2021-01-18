@@ -17,5 +17,9 @@ class DCA(ABC):
     def forecast(self):
         pass 
     
+    @abstractmethod
+    def fit(self):
+        pass 
+    
 
     
