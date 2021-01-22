@@ -1,5 +1,6 @@
 import pandas as pd
 from scipy import stats
+import numpy as np
 
 list_freq = ['A','M','D']
 
@@ -29,10 +30,10 @@ def converter_factor(From:str,To:str)->float:
 
 
 def check_value_or_prob(value):
-
+    assert isinstance(value,(stats._distn_infrastructure.rv_frozen, list, np.ndarray, float,int))
     if isinstance(value,stats._distn_infrastructure.rv_frozen):
         return value 
     else:
-        value = np.atpleat_1d(value)
+        value = np.atleast_1d(value)
         assert np.issubdtype(value.dtype,np.number)
         return value

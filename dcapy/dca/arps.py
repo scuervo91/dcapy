@@ -8,7 +8,7 @@ from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
 #Local Imports
 from .dca import DCA 
-from .timeconverter import list_freq, converter_factor, time_converter_matrix
+from .timeconverter import list_freq, converter_factor, time_converter_matrix, check_value_or_prob
 from ..filters import zscore
 
 def arps_exp_rate(time_array:np.ndarray,qi:float,di:float)->np.ndarray:
@@ -318,79 +318,82 @@ class Arps(DCA):
     ############## Properties ###########################
     
             
-        @property
-        def qi(self):
-            return self._qi
+    @property
+    def qi(self):
+        return self._qi
 
-        @qi.setter
-        def qi(self,value):
-            if value is not None:
-                try:
-                    value = float(value)
-                except Exception as e: 
-                    print(e)
-                    self._qi = None
-            else:
-                self._qi = value
-                
-        @property
-        def di(self):
-            return self._di
-
-        @di.setter
-        def di(self,value):
-            if value is not None:
-                try:
-                    value = float(value)
-                except Exception as e: 
-                    print(e)
-                    self._di = None
-            else:
-                self._di = value
-                
-        @property
-        def b(self):
-            return self._b
-
-        @b.setter
-        def b(self,value):
-            if value is not None:
-                try:
-                    value = float(value)
-                except Exception as e: 
-                    print(e)
-                    self._b = None
-            else:
-                self._b = value
-            
-        @property
-        def ti(self):
-            return self._ti
-
-        @ti.setter
-        def ti(self,value):
-            if value is not None:
-                try:
-                    assert isinstance(value,(float,date))
-                except Exception as e: 
-                    print(e)
-                    self._ti = None
-            else:
-                self._ti = value
-        
-        @property
-        def freq_di(self):
-            return self._ti
-
-        @freq_di.setter
-        def ti(self,value):
+    @qi.setter
+    def qi(self,value):
+        if value is not None:
             try:
-                assert value in list_freq
+                value = check_value_or_prob(value)
+                self._qi = value
             except Exception as e: 
                 print(e)
-                raise
-            else:
-                self._freq_di = value
+                raise Exception
+        else:
+            self._qi = None
+            
+    @property
+    def di(self):
+        return self._di
+
+    @di.setter
+    def di(self,value):
+        if value is not None:
+            try:
+                value = check_value_or_prob(value)
+                self._di = value
+            except Exception as e: 
+                print(e)
+                raise Exception
+        else:
+            self._di = None
+            
+    @property
+    def b(self):
+        return self._b
+
+    @b.setter
+    def b(self,value):
+        if value is not None:
+            try:
+                value = check_value_or_prob(value)
+                self._b = value
+            except Exception as e: 
+                print(e)
+                raise Exception
+        else:
+            self._b = None
+        
+    @property
+    def ti(self):
+        return self._ti
+
+    @ti.setter
+    def ti(self,value):
+        if value is not None:
+            try:
+                assert isinstance(value,(int,date))
+                self._ti = value
+            except Exception as e: 
+                print(e)
+                raise Exception
+        else:
+            self._ti = None
+    
+    @property
+    def freq_di(self):
+        return self._freq_di
+
+    @freq_di.setter
+    def freq_di(self,value):
+        try:
+            assert value in list_freq
+            self._freq_di = value
+        except Exception as e: 
+            print(e)
+            raise Exception
 
     def ti_n(self):
         if self.format() == 'number':
@@ -406,10 +409,10 @@ class Arps(DCA):
             return 'number'
                 
     def __repr__(self):
-        return 'Declination \n Ti: {self.ti} \n Qi: {self.qi} bbl/d \n Rate: {self.di} {self.freq_di} \n b: {self.b}'.format(self=self)
+        return 'Declination \n Ti: {self.ti} \n Qi: {self.qi} bbl/d \n Di: {self.di} {self.freq_di} \n b: {self.b}'.format(self=self)
 
     def __str__(self):
-        return 'Declination \n Ti: {self.ti} \n Qi: {self.qi} bbl/d \n Rate: {self.di} {self.freq_di} \n b: {self.b}'.format(self=self)
+        return 'Declination \n Ti: {self.ti} \n Qi: {self.qi} bbl/d \n Di: {self.di} {self.freq_di} \n b: {self.b}'.format(self=self)
                 
 
     def rate_time(self,rate:Union[int,float,np.ndarray],freq:str='D')->np.ndarray:
