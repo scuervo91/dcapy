@@ -1,4 +1,5 @@
 import pandas as pd
+from scipy import stats
 
 list_freq = ['A','M','D']
 
@@ -25,3 +26,13 @@ def converter_factor(From:str,To:str)->float:
         conversion factor
     """
     return time_converter_matrix.loc[From,To]
+
+
+def check_value_or_prob(value):
+
+    if isinstance(value,stats._distn_infrastructure.rv_frozen):
+        return value 
+    else:
+        value = np.atpleat_1d(value)
+        assert np.issubdtype(value.dtype,np.number)
+        return value

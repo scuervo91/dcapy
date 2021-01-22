@@ -433,12 +433,15 @@ class Arps(DCA):
         time = arps_rate_time(self.qi,self.di*di_factor,self.b,rate)
         return time 
     
-    def forecast(self,start:Union[date,float]=None, end:Union[date,float]=None, rate_limit:float=None,
+    def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, end:Union[date,float]=None, rate_limit:float=None,
                  np_limit:float=None, freq_input:str='D', freq_output:str='M')->pd.DataFrame:
         """forecast Estimate the forecast given the Arps parameters, dates and limits.
 
         Parameters
         ----------
+        time_list: Union[float,date], optional
+            A numpy array or pandas Series with dtype datetime64 when format date
+            is used else with dtype float for days numbers. It is used for custom time, by default None
         start :Union[float,date], optional
             The first date at which the DataFrame will start. If not specified,
             the Arps.ti parameter is used, by default None
@@ -463,9 +466,21 @@ class Arps(DCA):
             Result DataFrame indexed by DateTime array
         """
         
+        #If the Instance format is date perform operations to convert
+        # the dates to ordinal and estimate the production rates
         if self.format() == 'date':
-            assert all(isinstance(i,date) for i in [start,end])
-            time_range = pd.Series(pd.period_range(start=start, end=end, freq=freq_output))
+
+            #Check if the time range was given. If True, use this to estimate the time array for
+            # the Forecast
+            if time_list is not None:
+                assert isinstance(time_list, (pd.Series, np.ndarray)), f'Must be np.array or pd.Series with dtype datetime64. {type(time_array)} was given'
+                assert np.issubdtype(time_list.dtype, np.datetime64), f'dtype must be datetime64. {time_array.dtype} was given'
+                time_list = pd.Series(time_list).dt.to_period(freq_output)
+            else:
+                assert all(isinstance(i,date) for i in [start,end])
+                time_list = pd.period_range(start=start, end=end, freq=freq_output)
+
+            time_range = pd.Series(time_list)
             time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()) - self.ti.toordinal()
 
             di_factor = converter_factor(self.freq_di,'D')
@@ -479,11 +494,18 @@ class Arps(DCA):
             _cumulative = arps_cumulative(time_array,self.qi,self.di*di_factor,self.b)
             _forecast_df = pd.DataFrame({'rate':np.squeeze(_forecast),'cumulative':np.squeeze(_cumulative)},index=time_range)
         else:
-            assert all(isinstance(i,(int,float)) for i in [start,end])
-            
-            fq = converter_factor(freq_input,freq_output)
-            assert fq>=1, 'The output frecuency must be greater than input'
-            time_array = np.arange(start, end, int(fq))
+
+            if time_list is not None:
+                time_list = np.atleast_1d(time_list)
+                assert isinstance(time_list, (pd.Series, np.ndarray)), f'Must be np.array or pd.Series with dtype datetime64. {type(time_array)} was given'
+                assert np.issubdtype(time_list.dtype, np.integer), f'dtype must be integer. {time_array.dtype} was given'
+            else:
+                assert all(isinstance(i,(int,float)) for i in [start,end])          
+                fq = converter_factor(freq_input,freq_output)
+                assert fq>=1, 'The output frecuency must be greater than input'
+                time_list = np.arange(start, end, int(fq))
+
+            time_array = time_list
             di_factor = converter_factor(self.freq_di,freq_input)
             
             if rate_limit is not None:
