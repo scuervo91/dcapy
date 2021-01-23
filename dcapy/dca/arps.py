@@ -5,7 +5,9 @@ import pandas as pd
 from datetime import datetime, date, timedelta
 from typing import Union
 from scipy.optimize import curve_fit
+from scipy import stats
 import matplotlib.pyplot as plt
+import seaborn as sns
 #Local Imports
 from .dca import DCA 
 from .timeconverter import list_freq, converter_factor, time_converter_matrix, check_value_or_prob
@@ -258,10 +260,20 @@ def arps_rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
     np.ndarray
         Time at which the rate limit is reached
     """
-    if b == 0:
-        time_until = np.log(qi / rate) * (1/di)
-    else:
-        time_until = (np.power(qi / rate, b) - 1)/(b * di)
+    qi = np.atleast_1d(qi)
+    di = np.atleast_1d(di)
+    b = np.atleast_1d(b)
+
+    time_until = np.where(
+        b==0,
+        np.log(qi / rate) * (1/di),
+        (np.power(qi / rate, b) - 1)/(b * di)
+    )
+
+    #if b == 0:
+    #    time_until = np.log(qi / rate) * (1/di)
+    #else:
+    #    time_until = (np.power(qi / rate, b) - 1)/(b * di)
     
     return time_until.astype(int)
 
@@ -287,7 +299,7 @@ class Arps(DCA):
     rate_time
         Estimate the time at which the Arps instance would reach the defined rate
     """
-    def __init__(self,qi:float=None, di:float=None, b:float=None, ti:Union[float,date]=None,freq_di:str='M'):
+    def __init__(self,qi:float=None, di:float=None, b:float=None, ti:Union[float,date]=None,freq_di:str='M', seed:int=None):
         """__init__ Initiate instance of Arps Decline Curve Type
 
         Parameters
@@ -302,6 +314,8 @@ class Arps(DCA):
             Date of the Initial Rate 'qi'
         freq_di : str
             Frequency at with is reported the decline rate
+        seed : int
+            Seed for the random number generator
 
         Returns
         -------
@@ -313,6 +327,7 @@ class Arps(DCA):
         self.b = b
         self.ti = ti 
         self.freq_di = freq_di
+        self.seed = seed
 
     #####################################################
     ############## Properties ###########################
@@ -333,6 +348,19 @@ class Arps(DCA):
                 raise Exception
         else:
             self._qi = None
+
+    def get_qi(self,size=None, ppf=None):
+        if isinstance(self.qi,stats._distn_infrastructure.rv_frozen):
+            if size is None:
+                return self.qi.mean()
+            elif ppf is None:
+                return self.qi.rvs(size=size,random_state=self.seed)
+            else:
+                return self.qi.ppf(ppf)
+
+        else:
+            return self.qi
+
             
     @property
     def di(self):
@@ -349,6 +377,18 @@ class Arps(DCA):
                 raise Exception
         else:
             self._di = None
+
+    def get_di(self,size=None, ppf=None):
+        if isinstance(self.di,stats._distn_infrastructure.rv_frozen):
+            if size is None:
+                return self.di.mean()
+            elif ppf is None:
+                return self.di.rvs(size=size,random_state=self.seed)
+            else:
+                return self.di.ppf(ppf)
+
+        else:
+            return self.di
             
     @property
     def b(self):
@@ -365,6 +405,18 @@ class Arps(DCA):
                 raise Exception
         else:
             self._b = None
+
+    def get_b(self,size=None, ppf=None):
+        if isinstance(self.b,stats._distn_infrastructure.rv_frozen):
+            if size is None:
+                return self.b.mean()
+            elif ppf is None:
+                return self.b.rvs(size=size,random_state=self.seed)
+            else:
+                return self.b.ppf(ppf)
+
+        else:
+            return self.b
         
     @property
     def ti(self):
@@ -414,30 +466,34 @@ class Arps(DCA):
     def __str__(self):
         return 'Declination \n Ti: {self.ti} \n Qi: {self.qi} bbl/d \n Di: {self.di} {self.freq_di} \n b: {self.b}'.format(self=self)
                 
-
-    def rate_time(self,rate:Union[int,float,np.ndarray],freq:str='D')->np.ndarray:
-        """rate_time Estimate the time at which the Arps Instance would reach the given rate
+    @staticmethod
+    def rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
+                 b:Union[np.ndarray,float], rate:Union[int,float,np.ndarray])->np.ndarray:
+        """arps_rate_time Estimate the time at which the rate is reached given Arps parameters
 
         Parameters
         ----------
-        rate : Union[int,float,np.ndarray]
-            Rates at which are desired to estimate the time
-
-        freq : str
-            Time frecuency
+        qi : float
+            Initial Rate at ti
+        di : float
+            Decline rate
+        b : float
+            description
+        rate : float
+            Rate limit at which the forecast must be stop
+        ti : float, optional
+            Time of the initial rate qi, by default 0.0
 
         Returns
         -------
         np.ndarray
-            array of times
-        """      
-        freq = 'D' if self.format()=='date' else freq
-        di_factor = converter_factor(self.freq_di,freq)
-        time = arps_rate_time(self.qi,self.di*di_factor,self.b,rate)
-        return time 
+            Time at which the rate limit is reached
+        """    
+
+        return arps_rate_time(qi,di,b,rate)
     
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, end:Union[date,float]=None, rate_limit:float=None,
-                 np_limit:float=None, freq_input:str='D', freq_output:str='M')->pd.DataFrame:
+                 np_limit:float=None, freq_input:str='D', freq_output:str='M', n:int=None,ppf=None)->pd.DataFrame:
         """forecast Estimate the forecast given the Arps parameters, dates and limits.
 
         Parameters
@@ -485,19 +541,9 @@ class Arps(DCA):
 
             time_range = pd.Series(time_list)
             time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()) - self.ti.toordinal()
-
+            time_array = time_array.values
             di_factor = converter_factor(self.freq_di,'D')
-            if rate_limit is not None:
-                time_limit = self.rate_time(rate_limit)
-                time_index = time_array<=time_limit
-                time_array = time_array.loc[time_index]
-                time_range = time_range.loc[time_index]
-                
-            _forecast = arps_forecast(time_array,self.qi,self.di*di_factor,self.b)
-            _cumulative = arps_cumulative(time_array,self.qi,self.di*di_factor,self.b)
-            _forecast_df = pd.DataFrame({'rate':np.squeeze(_forecast),'cumulative':np.squeeze(_cumulative)},index=time_range)
         else:
-
             if time_list is not None:
                 time_list = np.atleast_1d(time_list)
                 assert isinstance(time_list, (pd.Series, np.ndarray)), f'Must be np.array or pd.Series with dtype datetime64. {type(time_array)} was given'
@@ -509,20 +555,36 @@ class Arps(DCA):
                 time_list = np.arange(start, end, int(fq))
 
             time_array = time_list
+            time_range = time_list
             di_factor = converter_factor(self.freq_di,freq_input)
-            
-            if rate_limit is not None:
-                time_limit = self.rate_time(rate_limit,freq=freq_input)
-                time_index = time_array<=time_limit
-                time_array = time_array[time_index]
+
         
-            _forecast = arps_forecast(time_array,self.qi,self.di*di_factor,self.b,self.ti_n())
-            #Cum converter. COnvert the rate on daily basis to the freq_input basis
-            # Example: If a rate of 5000 bbl/d is given and the user wanst to estimate
-            # the cumulative when the estimation is made in years the qi will be 1825000 bbl/year
-            cum_factor = converter_factor('D',freq_input)
-            _cumulative = arps_cumulative(time_array,self.qi*cum_factor,self.di*di_factor,self.b,self.ti_n())
-            _forecast_df = pd.DataFrame({'rate':np.squeeze(_forecast),'cumulative':np.squeeze(_cumulative)},index=time_array)
+        qi = self.get_qi(size=n, ppf=ppf)
+        di = self.get_di(size=n, ppf=ppf)*di_factor
+        b = self.get_b(size=n, ppf=ppf)
+            
+        if rate_limit is not None:
+            time_limit = self.rate_time(qi,di,b,rate_limit)
+            time_index = time_array<=time_limit.reshape(-1,1)
+
+            if n is None:
+                time_index = time_array>time_limit
+                time_array = time_array[time_index]
+                time_range = time_range[time_index]
+            else:
+                time_array = np.tile(time_array,(size,1))[time_index] = np.nan
+                
+        cum_factor = converter_factor('D',freq_input)
+        _forecast = arps_forecast(time_array,qi,di,b).flatten('F')
+        _cumulative = arps_cumulative(time_array,qi*cum_factor,di,b).flatten('F')
+        _iterations = np.repeat(np.arange(0,n),_forecast.shape[0]/n) if n is not None else np.zeros(_forecast.shape)
+        _forecast_df = pd.DataFrame(
+            {
+                'rate':np.squeeze(_forecast),
+                'cumulative':np.squeeze(_cumulative),
+                'iteration':_iterations
+            },
+                index=np.tile(time_range,n) if n is not None else time_range)
         
         return _forecast_df
     
@@ -621,7 +683,7 @@ class Arps(DCA):
         
     def plot(self, start:Union[float,date]=None, end:Union[float,date]=None,
              freq_input:str='D',freq_output:str='M',rate_limit:float=None,
-             np_limit:float=None,ax=None,rate_kw:dict={},cum_kw:dict={},
+             np_limit:float=None,n:int=None,ppf=None,ax=None,rate_kw:dict={},cum_kw:dict={},
              ad_kw:dict={},cum:bool=False,anomaly:float=False, **kwargs):
         """plot. Make a Plot in a Matplotlib axis of the rate forecast. 
          Optionally plot the cumulative curve in a second vertical axis.
@@ -663,7 +725,7 @@ class Arps(DCA):
         """
         f = self.forecast(start=start, end=end, 
                             freq_input=freq_input,freq_output=freq_output,
-                            rate_limit=rate_limit, np_limit=np_limit)
+                            rate_limit=rate_limit, np_limit=np_limit, n=n, ppf=ppf)
         #Create the Axex
         dax= ax or plt.gca()
 
@@ -699,7 +761,8 @@ class Arps(DCA):
 
         #Plotting
         time_axis = f.index.to_timestamp() if self.format()=='date' else f.index
-        dax.plot(time_axis,f['rate'],**rate_kw)   
+        sns.lineplot(data=f, x=time_axis, y='rate', hue='iteration',**rate_kw, ax=dax)
+        #dax.plot(time_axis,f['rate'],**rate_kw)   
 
         if cum:
             cumax=dax.twinx()
