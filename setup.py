@@ -23,7 +23,9 @@ setuptools.setup(
         'seaborn',
         'scipy',
         'scikit-image',
-        'statsmodels'
+        'statsmodels',
+        'wellpy',
+        'cashflows2'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
