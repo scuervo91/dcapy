@@ -518,6 +518,11 @@ class Arps(DCA):
         freq_output : str, optional
             Frequency at which the forecast will be returned. 
             by default the frequency will be on monthly basis, by default 'M'
+        n: int, optional
+            Number of samples to be simulated using Montecarlo simulation
+        ppf: float, optional
+            Percentil number to be generated instead if random numbers when a probability
+            distribution is set
 
         Returns
         -------
