@@ -492,7 +492,7 @@ class Arps(BaseModel,DCA):
                 assert isinstance(time_list, (pd.Series, np.ndarray)), f'Must be np.array or pd.Series with dtype datetime64. {type(time_array)} was given'
                 assert np.issubdtype(time_list.dtype, np.integer), f'dtype must be integer. {time_array.dtype} was given'
             else:
-                assert all(isinstance(i,(int,float)) for i in [start,end]), f'{type(start)},{type(end)} '      
+                assert all(isinstance(i,(int,float)) for i in [start,end])     
                 fq = converter_factor(freq_input,freq_output)
                 assert fq>=1, 'The output frecuency must be greater than input'
                 time_list = np.arange(start, end, int(fq))
