@@ -1,8 +1,15 @@
 import pandas as pd
 from scipy import stats
 import numpy as np
+from enum import Enum
 
 list_freq = ['A','M','D']
+
+class FreqEnum(str, Enum):
+    A = 'A'
+    M = 'M'
+    D = 'D'
+
 
 di = {
     'to':['A','A','A','M','M','M','D','D','D'],

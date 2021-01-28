@@ -1,3 +1,3 @@
 from .arps import arps_exp_rate,arps_exp_cumulative,arps_arm_cumulative,arps_hyp_cumulative,arps_cumulative, arps_hyp_rate, arps_rate_time, arps_forecast,Arps
 from .dca import DCA
-from .timeconverter import converter_factor, list_freq,time_converter_matrix
+from .timeconverter import converter_factor, list_freq,time_converter_matrix, FreqEnum

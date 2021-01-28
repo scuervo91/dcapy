@@ -8,9 +8,11 @@ from scipy.optimize import curve_fit
 from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
+from pydantic import BaseModel, Field
+from typing import Union, List, Optional
 #Local Imports
 from .dca import DCA 
-from .timeconverter import list_freq, converter_factor, time_converter_matrix, check_value_or_prob
+from .timeconverter import list_freq, converter_factor, time_converter_matrix, check_value_or_prob, FreqEnum
 from ..filters import zscore
 
 def arps_exp_rate(time_array:np.ndarray,qi:float,di:float)->np.ndarray:
@@ -278,7 +280,7 @@ def arps_rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
     return time_until.astype(int)
 
             
-class Arps(DCA):
+class Arps(BaseModel,DCA):
     """Arps Arps decline curve Instance
 
     Attributes
@@ -299,56 +301,50 @@ class Arps(DCA):
     rate_time
         Estimate the time at which the Arps instance would reach the defined rate
     """
-    def __init__(self,qi:float=None, di:float=None, b:float=None, ti:Union[float,date]=None,freq_di:str='M', seed:int=None):
-        """__init__ Initiate instance of Arps Decline Curve Type
+    qi: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
+    di: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
+    b: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
+    ti: Union[int,date] = Field(...)
+    freq_di: FreqEnum = Field('M')
+    seed : Optional[int]
 
-        Parameters
-        ----------
-        qi : float
-            Initial Rate
-        di : float
-            Decline Rate
-        b : float
-            Arps Constant b
-        ti : Union[float,date]
-            Date of the Initial Rate 'qi'
-        freq_di : str
-            Frequency at with is reported the decline rate
-        seed : int
-            Seed for the random number generator
+    class Config:
+        arbitrary_types_allowed = True
 
-        Returns
-        -------
-        Arps
-            Return an instance of Arps class
-        """
-        self.qi = qi 
-        self.di = di 
-        self.b = b
-        self.ti = ti 
-        self.freq_di = freq_di
-        self.seed = seed
+    #def __init__(self,qi:float=None, di:float=None, b:float=None, ti:Union[float,date]=None,freq_di:str='M', seed:int=None):
+    """__init__ Initiate instance of Arps Decline Curve Type
+
+    Parameters
+    ----------
+    qi : float
+        Initial Rate
+    di : float
+        Decline Rate
+    b : float
+        Arps Constant b
+    ti : Union[float,date]
+        Date of the Initial Rate 'qi'
+    freq_di : str
+        Frequency at with is reported the decline rate
+    seed : int
+        Seed for the random number generator
+
+    Returns
+    -------
+    Arps
+        Return an instance of Arps class
+    """
+        #self.qi = qi 
+        #self.di = di 
+        #self.b = b
+        #self.ti = ti 
+        #self.freq_di = freq_di
+        #self.seed = seed
 
     #####################################################
     ############## Properties ###########################
     
             
-    @property
-    def qi(self):
-        return self._qi
-
-    @qi.setter
-    def qi(self,value):
-        if value is not None:
-            try:
-                value = check_value_or_prob(value)
-                self._qi = value
-            except Exception as e: 
-                print(e)
-                raise Exception
-        else:
-            self._qi = None
-
     def get_qi(self,size=None, ppf=None):
         if isinstance(self.qi,stats._distn_infrastructure.rv_frozen):
             if size is None:
@@ -359,25 +355,9 @@ class Arps(DCA):
                 return self.qi.ppf(ppf)
 
         else:
-            return self.qi
+            return np.array([self.qi])
 
             
-    @property
-    def di(self):
-        return self._di
-
-    @di.setter
-    def di(self,value):
-        if value is not None:
-            try:
-                value = check_value_or_prob(value)
-                self._di = value
-            except Exception as e: 
-                print(e)
-                raise Exception
-        else:
-            self._di = None
-
     def get_di(self,size=None, ppf=None):
         if isinstance(self.di,stats._distn_infrastructure.rv_frozen):
             if size is None:
@@ -388,23 +368,9 @@ class Arps(DCA):
                 return self.di.ppf(ppf)
 
         else:
-            return self.di
+            return np.array([self.di])
             
-    @property
-    def b(self):
-        return self._b
 
-    @b.setter
-    def b(self,value):
-        if value is not None:
-            try:
-                value = check_value_or_prob(value)
-                self._b = value
-            except Exception as e: 
-                print(e)
-                raise Exception
-        else:
-            self._b = None
 
     def get_b(self,size=None, ppf=None):
         if isinstance(self.b,stats._distn_infrastructure.rv_frozen):
@@ -416,36 +382,8 @@ class Arps(DCA):
                 return self.b.ppf(ppf)
 
         else:
-            return self.b
+            return np.array([self.b])
         
-    @property
-    def ti(self):
-        return self._ti
-
-    @ti.setter
-    def ti(self,value):
-        if value is not None:
-            try:
-                assert isinstance(value,(int,date))
-                self._ti = value
-            except Exception as e: 
-                print(e)
-                raise Exception
-        else:
-            self._ti = None
-    
-    @property
-    def freq_di(self):
-        return self._freq_di
-
-    @freq_di.setter
-    def freq_di(self,value):
-        try:
-            assert value in list_freq
-            self._freq_di = value
-        except Exception as e: 
-            print(e)
-            raise Exception
 
     def ti_n(self):
         if self.format() == 'number':
@@ -493,7 +431,7 @@ class Arps(DCA):
         return arps_rate_time(qi,di,b,rate)
     
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, end:Union[date,float]=None, rate_limit:float=None,
-                 np_limit:float=None, freq_input:str='D', freq_output:str='M', n:int=None,ppf=None)->pd.DataFrame:
+                 cum_limit:float=None, freq_input:str='D', freq_output:str='M', n:int=None,ppf=None)->pd.DataFrame:
         """forecast Estimate the forecast given the Arps parameters, dates and limits.
 
         Parameters
@@ -506,11 +444,11 @@ class Arps(DCA):
             the Arps.ti parameter is used, by default None
         end : Union[float,date], optional
             The maximum date at which the DataFrame will end. if the resulting date
-            at which either econ_limit or np_limit reach the rate limit is beyond end_date,
+            at which either rate_limit or cum_limit reach the rate limit is beyond end_date,
             the last date will be end_date, otherwise the date estimated, by default None
         rate_limit : float, optional
             Rate at which the forecast will stop, by default None
-        np_limit : float, optional
+        cum_limit : float, optional
             Cumulative volume at which the forecast will stop, by default None
         freq_input : str, optional
             Frequency at which the estimations will be performed. 
@@ -554,7 +492,7 @@ class Arps(DCA):
                 assert isinstance(time_list, (pd.Series, np.ndarray)), f'Must be np.array or pd.Series with dtype datetime64. {type(time_array)} was given'
                 assert np.issubdtype(time_list.dtype, np.integer), f'dtype must be integer. {time_array.dtype} was given'
             else:
-                assert all(isinstance(i,(int,float)) for i in [start,end])          
+                assert all(isinstance(i,(int,float)) for i in [start,end]), f'{type(start)},{type(end)} '      
                 fq = converter_factor(freq_input,freq_output)
                 assert fq>=1, 'The output frecuency must be greater than input'
                 time_list = np.arange(start, end, int(fq))
@@ -688,7 +626,7 @@ class Arps(DCA):
         
     def plot(self, start:Union[float,date]=None, end:Union[float,date]=None,
              freq_input:str='D',freq_output:str='M',rate_limit:float=None,
-             np_limit:float=None,n:int=None,ppf=None,ax=None,rate_kw:dict={},cum_kw:dict={},
+             cum_limit:float=None,n:int=None,ppf=None,ax=None,rate_kw:dict={},cum_kw:dict={},
              ad_kw:dict={},cum:bool=False,anomaly:float=False, **kwargs):
         """plot. Make a Plot in a Matplotlib axis of the rate forecast. 
          Optionally plot the cumulative curve in a second vertical axis.
@@ -700,11 +638,11 @@ class Arps(DCA):
             the Arps.ti parameter is used, by default None
         end : Union[float,date], optional
             The maximum date at which the DataFrame will end. if the resulting date
-            at which either econ_limit or np_limit reach the rate limit is beyond end_date,
+            at which either econ_limit or cum_limit reach the rate limit is beyond end_date,
             the last date will be end_date, otherwise the date estimated, by default None
         rate_limit : float, optional
             Rate at which the forecast will stop, by default None
-        np_limit : float, optional
+        cum_limit : float, optional
             Cumulative volume at which the forecast will stop, by default None
         freq_input : str, optional
             Frequency at which the estimations will be performed. 
@@ -730,7 +668,7 @@ class Arps(DCA):
         """
         f = self.forecast(start=start, end=end, 
                             freq_input=freq_input,freq_output=freq_output,
-                            rate_limit=rate_limit, np_limit=np_limit, n=n, ppf=ppf)
+                            rate_limit=rate_limit, cum_limit=cum_limit, n=n, ppf=ppf)
         #Create the Axex
         dax= ax or plt.gca()
 
