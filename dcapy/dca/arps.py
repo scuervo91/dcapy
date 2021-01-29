@@ -355,7 +355,7 @@ class Arps(BaseModel,DCA):
                 return self.qi.ppf(ppf)
 
         else:
-            return np.array([self.qi])
+            return np.atleast_1d(self.qi)
 
             
     def get_di(self,size=None, ppf=None):
@@ -368,7 +368,7 @@ class Arps(BaseModel,DCA):
                 return self.di.ppf(ppf)
 
         else:
-            return np.array([self.di])
+            return np.atleast_1d(self.di)
             
 
 
@@ -382,7 +382,7 @@ class Arps(BaseModel,DCA):
                 return self.b.ppf(ppf)
 
         else:
-            return np.array([self.b])
+            return np.atleast_1d(self.b)
         
 
     def ti_n(self):
@@ -431,7 +431,7 @@ class Arps(BaseModel,DCA):
         return arps_rate_time(qi,di,b,rate)
     
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, end:Union[date,float]=None, rate_limit:float=None,
-                 cum_limit:float=None, freq_input:str='D', freq_output:str='M', n:int=None,ppf=None)->pd.DataFrame:
+                 cum_limit:float=None, freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None)->pd.DataFrame:
         """forecast Estimate the forecast given the Arps parameters, dates and limits.
 
         Parameters
@@ -456,7 +456,7 @@ class Arps(BaseModel,DCA):
         freq_output : str, optional
             Frequency at which the forecast will be returned. 
             by default the frequency will be on monthly basis, by default 'M'
-        n: int, optional
+        iter: int, optional
             Number of samples to be simulated using Montecarlo simulation
         ppf: float, optional
             Percentil number to be generated instead if random numbers when a probability
@@ -502,34 +502,38 @@ class Arps(BaseModel,DCA):
             di_factor = converter_factor(self.freq_di,freq_input)
 
         
-        qi = self.get_qi(size=n, ppf=ppf)
-        di = self.get_di(size=n, ppf=ppf)*di_factor
-        b = self.get_b(size=n, ppf=ppf)
-            
+        qi = self.get_qi(size=iter, ppf=ppf)
+        di = self.get_di(size=iter, ppf=ppf)*di_factor
+        b = self.get_b(size=iter, ppf=ppf)
+        
+        iter = np.array([i.shape[0] for i in [qi,di,b]]).max()
+                    
         if rate_limit is not None:
             time_limit = self.rate_time(qi,di,b,rate_limit)
-            time_index = time_array<=time_limit.reshape(-1,1)
-
-            if n is None:
+            
+            if iter==1:
                 time_index = time_array>time_limit
                 time_array = time_array[time_index]
                 time_range = time_range[time_index]
             else:
-                time_array = np.tile(time_array,(size,1))[time_index] = np.nan
+                time_index = time_array>=time_limit.reshape(-1,1)
+                time_array = np.tile(time_array,(iter,1)).astype('float')
+                time_array[time_index] = np.nan
                 
         cum_factor = converter_factor('D',freq_input)
         _forecast = arps_forecast(time_array,qi,di,b).flatten('F')
         _cumulative = arps_cumulative(time_array,qi*cum_factor,di,b).flatten('F')
-        _iterations = np.repeat(np.arange(0,n),_forecast.shape[0]/n) if n is not None else np.zeros(_forecast.shape)
+        _iterations = np.repeat(np.arange(0,iter),_forecast.shape[0]/iter) #if n is not None else np.zeros(_forecast.shape)
         _forecast_df = pd.DataFrame(
             {
                 'rate':np.squeeze(_forecast),
                 'cumulative':np.squeeze(_cumulative),
                 'iteration':_iterations
             },
-                index=np.tile(time_range,n) if n is not None else time_range)
+                index=np.tile(time_range,iter) #if n is not None else time_range)
+        )
         
-        return _forecast_df
+        return _forecast_df.dropna()
     
     def fit(self,df:pd.DataFrame=None,time:Union[str,np.ndarray,pd.Series]=None,
             rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={}):
@@ -626,7 +630,7 @@ class Arps(BaseModel,DCA):
         
     def plot(self, start:Union[float,date]=None, end:Union[float,date]=None,
              freq_input:str='D',freq_output:str='M',rate_limit:float=None,
-             cum_limit:float=None,n:int=None,ppf=None,ax=None,rate_kw:dict={},cum_kw:dict={},
+             cum_limit:float=None,iter:int=1,ppf=None,ax=None,rate_kw:dict={},cum_kw:dict={},
              ad_kw:dict={},cum:bool=False,anomaly:float=False, **kwargs):
         """plot. Make a Plot in a Matplotlib axis of the rate forecast. 
          Optionally plot the cumulative curve in a second vertical axis.
@@ -668,7 +672,7 @@ class Arps(BaseModel,DCA):
         """
         f = self.forecast(start=start, end=end, 
                             freq_input=freq_input,freq_output=freq_output,
-                            rate_limit=rate_limit, cum_limit=cum_limit, n=n, ppf=ppf)
+                            rate_limit=rate_limit, cum_limit=cum_limit, iter=iter, ppf=ppf)
         #Create the Axex
         dax= ax or plt.gca()
 
