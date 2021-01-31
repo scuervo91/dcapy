@@ -7,14 +7,14 @@ from ..dca import FreqEnum
 
 class ChgPts(BaseModel):
     time : Union[int,date]
-    value : str
+    value : float
 
 class CashFlow(BaseModel):
     name : str
     const_value : Union[float,List[float]] = Field(0)
     start : date = Field(...)
-    start : date = Field(...)
-    start : Optional[int] = Field(None)
+    end : date = Field(...)
+    period : Optional[int] = Field(None)
     freq: FreqEnum = Field('M')
     chgpts: Optional[ChgPts] = Field(None)
 
@@ -46,4 +46,7 @@ class CashFlowInput(BaseModel):
 	fix_opex : Optional[Union[float,List[float]]]
 	oil_var_opex : Optional[Union[float,List[float]]]
 	gas_var_opex : Optional[Union[float,List[float]]]
-    
+    abandonment : Optional[Union[float,List[float]]]
+
+    class Config:
+        validate_assignment = True

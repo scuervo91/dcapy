@@ -7,13 +7,19 @@ import pandas as pd
 #Local Imports
 from ..dca import Arps
 from ..dca import FreqEnum
-from .cashflow import CashFlowInput, CashFlowModel
+from .cashflow import CashFlowInput, CashFlowModel, CashFlow, ChgPts
 
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
 # the input dca is a subclass of DCA. 
 # Still I don't know if there's a way Pydantic check if a input variable is subclass of other class
 #Example.  Check y Arps is subclass of DCA
 union_classes_dca = Union[Arps]
+
+freq_format={
+    'M':'%Y-%m',
+    'D':'%Y-%m-%d',
+    'A':'%Y'
+}
 
 
 class PeriodResult(BaseModel):
@@ -48,10 +54,28 @@ class Period(BaseModel):
 	def forecast(self):
 		_forecast = self.dca.forecast(
 			start=self.start, end=self.end, freq_input=self.freq_input, 
-			freq_output=self.freq_output, rate_limit=self.rate_limit, cum_limit=self.cum_limit)
+			freq_output=self.freq_output, rate_limit=self.rate_limit, 
+   			cum_limit=self.cum_limit, fluid_rate = self.fluid_rate,
+			bsw=self.bsw, wor=self.wor, gor=self.gor, glr=self.glr
+      	)
 
-
+		if self.cashflow:
+			#Format date
+			fmt = freq_format[self.freq_output]
+			capex_sched = []
+			if self.cashflow.capex:
+				capex_date = self.start.strftime(fmt)
+				capex_sched.append(
+        			CashFlow(
+        				const_value=0,
+						start = _forecast.index.min(),
+						end = _forecast.index.max(),
+						freq = self.freq_output,
+						chgpts = ChgPts(time=_forecast.index.min(), value=self.cashflow.capex)
+					)				
+				)
   
+	
 
 class Scenario(BaseModel):
 	name : str
