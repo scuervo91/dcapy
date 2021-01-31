@@ -306,7 +306,12 @@ class Arps(BaseModel,DCA):
     b: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
     ti: Union[int,date] = Field(...)
     freq_di: FreqEnum = Field('M')
-    seed : Optional[int]
+    seed : Optional[int] = Field(None)
+    fluid_rate: Optional[Union[float,List[float]]] = Field(None)
+    bsw: Optional[Union[float,List[float]]] = Field(None)
+    wor: Optional[Union[float,List[float]]] = Field(None)
+    gor: Optional[Union[float,List[float]]] = Field(None)
+    glr: Optional[Union[float,List[float]]] = Field(None)
 
     class Config:
         arbitrary_types_allowed = True
@@ -475,8 +480,8 @@ class Arps(BaseModel,DCA):
             #Check if the time range was given. If True, use this to estimate the time array for
             # the Forecast
             if time_list is not None:
-                assert isinstance(time_list, (pd.Series, np.ndarray)), f'Must be np.array or pd.Series with dtype datetime64. {type(time_array)} was given'
-                assert np.issubdtype(time_list.dtype, np.datetime64), f'dtype must be datetime64. {time_array.dtype} was given'
+                assert isinstance(time_list, (pd.Series, np.ndarray)), f'Must be np.array or pd.Series with dtype datetime64. {type(time_list)} was given'
+                assert np.issubdtype(time_list.dtype, np.datetime64), f'dtype must be datetime64. {time_list.dtype} was given'
                 time_list = pd.Series(time_list).dt.to_period(freq_output)
             else:
                 assert all(isinstance(i,date) for i in [start,end])
@@ -489,8 +494,8 @@ class Arps(BaseModel,DCA):
         else:
             if time_list is not None:
                 time_list = np.atleast_1d(time_list)
-                assert isinstance(time_list, (pd.Series, np.ndarray)), f'Must be np.array or pd.Series with dtype datetime64. {type(time_array)} was given'
-                assert np.issubdtype(time_list.dtype, np.integer), f'dtype must be integer. {time_array.dtype} was given'
+                assert isinstance(time_list, (pd.Series, np.ndarray)), f'Must be np.array or pd.Series with dtype datetime64. {type(time_list)} was given'
+                assert np.issubdtype(time_list.dtype, np.integer), f'dtype must be integer. {time_list.dtype} was given'
             else:
                 assert all(isinstance(i,(int,float)) for i in [start,end])     
                 fq = converter_factor(freq_input,freq_output)
@@ -532,7 +537,58 @@ class Arps(BaseModel,DCA):
             },
                 index=np.tile(time_range,iter) #if n is not None else time_range)
         )
-        
+                
+        #Water Rate
+        if any([i is not None for i in [self.fluid_rate,self.bsw,self.wor]]):
+                              
+            if self.fluid_rate:
+                _forecast_df['fluid_rate'] = self.fluid_rate if isinstance(self.fluid_rate,float) else np.tile(self.fluid_rate,iter)
+                _forecast_df['water_rate'] = _forecast_df['fluid_rate'] - _forecast_df['rate']
+                _forecast_df['bsw'] = _forecast_df['water_rate'] / _forecast_df['fluid_rate']
+                _forecast_df['wor'] = _forecast_df['water_rate'] / _forecast_df['rate']
+            elif self.bsw:
+                _forecast_df['bsw'] = self.bsw if isinstance(self.bsw,float) else np.tile(self.bsw,iter)
+                _forecast_df['water_rate'] = (_forecast_df['bsw']*_forecast_df['rate'])/(1-_forecast_df['bsw'])
+                _forecast_df['fluid_rate'] = _forecast_df['rate'] + _forecast_df['water_rate']
+                _forecast_df['wor'] = _forecast_df['water_rate'] / _forecast_df['rate']
+            else:
+                _forecast_df['wor'] = self.wor if isinstance(self.wor,float) else np.tile(self.wor,iter)
+                _forecast_df['bsw'] = _forecast_df['wor']/(_forecast_df['wor']+1)
+                _forecast_df['water_rate'] = (_forecast_df['bsw']*_forecast_df['rate'])/(1-_forecast_df['bsw'])
+                _forecast_df['fluid_rate'] = _forecast_df['rate'] + _forecast_df['water_rate']
+            
+            for i in _forecast_df['iteration'].unique():
+                _f_index = _forecast_df.loc[_forecast_df['iteration']==i].index
+                if self.format() == 'date':
+                    delta_time = np.diff(pd.Series(_f_index.to_timestamp()).apply(lambda x: x.toordinal()))
+                    delta_time = np.append(0,delta_time)
+                else:
+                    delta_time = np.diff(_f_index,prepend=0)
+                    
+                _forecast_df.loc[_forecast_df['iteration']==i,'water_cum'] = _forecast_df.loc[_forecast_df['iteration']==i,'water_rate'].multiply(cum_factor).multiply(delta_time).cumsum()
+                _forecast_df.loc[_forecast_df['iteration']==i,'fluid_cum'] = _forecast_df.loc[_forecast_df['iteration']==i,'fluid_rate'].multiply(cum_factor).multiply(delta_time).cumsum()                
+
+        #Gas Rate
+        if any([i is not None for i in [self.gor,self.glr]]):
+                              
+            if self.gor:
+                _forecast_df['gor'] = self.gor if isinstance(self.gor,float) else np.tile(self.gor,iter)
+                _forecast_df['gas_rate'] = _forecast_df['rate'] * _forecast_df['gor']
+            elif self.glr and 'fluid_rate' in _forecast_df.columns:
+                _forecast_df['glr'] = self.glr if isinstance(self.glr,float) else np.tile(self.glr,iter)
+                _forecast_df['gas_rate'] = _forecast_df['fluid_rate'] * _forecast_df['glr']
+                _forecast_df['gor'] = _forecast_df['gas_rate'] / _forecast_df['rate']
+            
+            for i in _forecast_df['iteration'].unique():
+                _f_index = _forecast_df.loc[_forecast_df['iteration']==i].index
+                if self.format() == 'date':
+                    delta_time = np.diff(pd.Series(_f_index.to_timestamp()).apply(lambda x: x.toordinal()))
+                    delta_time = np.append(0,delta_time)
+                else:
+                    delta_time = np.diff(_f_index,prepend=0)
+                    
+                _forecast_df.loc[_forecast_df['iteration']==i,'gas_cum'] = _forecast_df.loc[_forecast_df['iteration']==i,'gas_rate'].multiply(cum_factor).multiply(delta_time).cumsum()
+
         return _forecast_df.dropna()
     
     def fit(self,df:pd.DataFrame=None,time:Union[str,np.ndarray,pd.Series]=None,
