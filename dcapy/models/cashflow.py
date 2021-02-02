@@ -5,25 +5,51 @@ from cashflows2.timeseries import cashflow
 
 from ..dca import FreqEnum
 
+
+freq_format={
+    'M':'%Y-%m',
+    'D':'%Y-%m-%d',
+    'A':'%Y'
+}
+
+
 class ChgPts(BaseModel):
-    time : Union[int,date]
+    time : date
     value : float
 
 class CashFlow(BaseModel):
     name : str
     const_value : Union[float,List[float]] = Field(0)
     start : date = Field(...)
-    end : date = Field(...)
-    period : Optional[int] = Field(None)
+    end : Optional[date] = Field(None)
+    periods : Optional[int] = Field(None)
     freq: FreqEnum = Field('M')
-    chgpts: Optional[ChgPts] = Field(None)
+    chgpts: Optional[List[ChgPts]] = Field(None)
 
     class Config:
         arbitrary_types_allowed = True
         validate_assignment = True
         
     def cashflow(self):
-        return cashflow(**self.dict())
+        #Get the date format according the frequency specified
+        fmt = freq_format[self.freq]
+
+        if self.chgpts:
+            chgpts_dict = {}
+            for cash in self.chgpts:
+                chgpts_dict.update({cash.time.strftime(fmt):cash.value})
+        else:
+            chgpts_dict = None
+
+        print(self.dict())
+        return cashflow(
+            const_value = self.const_value,
+            start = self.start,
+            end = self.end,
+            periods = self.periods,
+            freq = self.freq,
+            chgpts = chgpts_dict
+        )
     
 class CashFlowGroup(BaseModel):
     name : str 
@@ -34,19 +60,20 @@ class CashFlowGroup(BaseModel):
         validate_assignment = True
         
 class CashFlowModel(BaseModel):
-    income : CashFlowGroup
-    opex : CashFlowGroup
-    capex : CashFlowGroup
+    income : Optional[CashFlowGroup]
+    opex : Optional[CashFlowGroup]
+    capex : Optional[CashFlowGroup]
     
     
 class CashFlowInput(BaseModel):
-	oil_price : Optional[Union[float,List[float]]]
-	gas_price : Optional[Union[float,List[float]]]
-	capex : Optional[Union[float,List[float]]]
-	fix_opex : Optional[Union[float,List[float]]]
-	oil_var_opex : Optional[Union[float,List[float]]]
-	gas_var_opex : Optional[Union[float,List[float]]]
-    abandonment : Optional[Union[float,List[float]]]
+    oil_price : Optional[Union[float,List[ChgPts]]]
+    gas_price : Optional[Union[float,List[ChgPts]]]
+    capex : Optional[Union[float,List[ChgPts]]]
+    fix_opex : Optional[Union[float,List[ChgPts]]]
+    oil_var_opex : Optional[Union[float,List[ChgPts]]]
+    gas_var_opex : Optional[Union[float,List[ChgPts]]]
+    abandonment : Optional[Union[float,List[ChgPts]]]
 
     class Config:
         validate_assignment = True
+        arbitrary_types_allowed = True
