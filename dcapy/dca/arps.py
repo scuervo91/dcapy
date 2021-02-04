@@ -525,7 +525,7 @@ class Arps(BaseModel,DCA):
                 time_array = np.tile(time_array,(iter,1)).astype('float')
                 time_array[time_index] = np.nan
                 
-        cum_factor = converter_factor('D',freq_input)
+        cum_factor = converter_factor('D',freq_input) if self.format() == 'number' else 1
         _forecast = arps_forecast(time_array,qi,di,b).flatten('F')
         _cumulative = arps_cumulative(time_array,qi*cum_factor,di,b).flatten('F')
         _iterations = np.repeat(np.arange(0,iter),_forecast.shape[0]/iter) #if n is not None else np.zeros(_forecast.shape)
@@ -537,6 +537,9 @@ class Arps(BaseModel,DCA):
             },
                 index=np.tile(time_range,iter) #if n is not None else time_range)
         )
+
+        for i in _forecast_df['iteration'].unique():
+            _forecast_df.loc[_forecast_df['iteration']==i,'volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'cumulative'].values,prepend=0)
                 
         #Water Rate
         if any([i is not None for i in [self.fluid_rate,self.bsw,self.wor]]):
@@ -567,7 +570,8 @@ class Arps(BaseModel,DCA):
                     
                 _forecast_df.loc[_forecast_df['iteration']==i,'water_cum'] = _forecast_df.loc[_forecast_df['iteration']==i,'water_rate'].multiply(cum_factor).multiply(delta_time).cumsum()
                 _forecast_df.loc[_forecast_df['iteration']==i,'fluid_cum'] = _forecast_df.loc[_forecast_df['iteration']==i,'fluid_rate'].multiply(cum_factor).multiply(delta_time).cumsum()                
-
+                _forecast_df.loc[_forecast_df['iteration']==i,'water_volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'water_cum'].values,prepend=0)
+                _forecast_df.loc[_forecast_df['iteration']==i,'fluid_volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'fluid_cum'].values,prepend=0) 
         #Gas Rate
         if any([i is not None for i in [self.gor,self.glr]]):
                               
@@ -588,6 +592,7 @@ class Arps(BaseModel,DCA):
                     delta_time = np.diff(_f_index,prepend=0)
                     
                 _forecast_df.loc[_forecast_df['iteration']==i,'gas_cum'] = _forecast_df.loc[_forecast_df['iteration']==i,'gas_rate'].multiply(cum_factor).multiply(delta_time).cumsum()
+                _forecast_df.loc[_forecast_df['iteration']==i,'gas_volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'gas_cum'].values,prepend=0)
 
         return _forecast_df.dropna()
     

@@ -1,10 +1,8 @@
 from pydantic import BaseModel, Field
-from typing import Union, List, Optional
+from typing import Union, List, Optional, Literal
 from datetime import date
 from cashflows2.timeseries import cashflow
-
-from ..dca import FreqEnum
-
+import pandas as pd
 
 freq_format={
     'M':'%Y-%m',
@@ -23,8 +21,9 @@ class CashFlow(BaseModel):
     start : date = Field(...)
     end : Optional[date] = Field(None)
     periods : Optional[int] = Field(None)
-    freq: FreqEnum = Field('M')
+    freq: Literal['M','D','A'] = Field('M')
     chgpts: Optional[List[ChgPts]] = Field(None)
+    agg_func : Literal['sum','mean'] = Field('mean')
 
     class Config:
         arbitrary_types_allowed = True
@@ -35,9 +34,14 @@ class CashFlow(BaseModel):
         fmt = freq_format[self.freq]
 
         if self.chgpts:
-            chgpts_dict = {}
+            chgpts_dicts = {}
             for cash in self.chgpts:
-                chgpts_dict.update({cash.time.strftime(fmt):cash.value})
+                chgpts_dicts.update({cash.time:cash.value})
+
+            print(chgpts_dicts)
+            chgpts_sr = pd.Series(chgpts_dicts)
+            chgpts_sr.index = pd.to_datetime(chgpts_sr.index).strftime(fmt)
+            chgpts_dict = chgpts_sr.groupby(level=0).agg(self.agg_func).to_dict()
         else:
             chgpts_dict = None
 

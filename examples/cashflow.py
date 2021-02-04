@@ -49,7 +49,8 @@ data = {
         'di':0.3,
         'freq_di':'A',
         'qi':800,
-        'b':0
+        'b':0,
+        'fluid_rate':1000
     },
     'start':'2021-01-01',
     'end':'2021-06-01',
@@ -59,10 +60,16 @@ data = {
     	'capex':-2e6,
     	'oil_var_opex': -10,
     	'fix_opex':-20000,
-    	'abandonment':[{
+    	'abandonment':[
+            {
     		'time':'2021-04-01',
     		'value':'-4e5'
-    	}]
+    	   },
+            {
+            'time':'2021-06-01',
+            'value':'-4.5e5'
+           },
+        ]
     }
 
 }
@@ -74,7 +81,7 @@ p1.generate_forecast()
 p1.generate_cashflow()
 
 print(p1.forecast)
-print(p1.cashflow_out.opex.cashflows[1].cashflow())
+print(p1.cashflow_out.capex.cashflows[1].cashflow())
 
 #print(cashflow(const_value=[-2000.0]*6, start=date(2021,1,1), freq='M'))
 

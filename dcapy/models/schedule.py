@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from datetime import date, timedelta
 import pandas as pd
 import numpy as np
+
 #Local Imports
 from ..dca import Arps
 from ..dca import FreqEnum
@@ -22,6 +23,8 @@ freq_format={
 }
 
 
+
+
 class PeriodResult(BaseModel):
 	forecast : pd.DataFrame 
 	cashflow : Optional[CashFlowModel]
@@ -34,15 +37,11 @@ class Period(BaseModel):
 	dca : union_classes_dca 
 	start: Union[int,date]
 	end: Optional[Union[int,date]]
-	freq_input: FreqEnum = Field('M')
-	freq_output: FreqEnum = Field('M')
+	time_list : Optional[List[Union[int,date]]] = Field(None)
+	freq_input: Literal['M','D','A'] = Field('M')
+	freq_output: Literal['M','D','A'] = Field('M')
 	rate_limit: Optional[float] = Field(None, ge=0)
 	cum_limit: Optional[float] = Field(None, ge=0)
-	#fluid_rate: Optional[Union[float,List[float]]] = Field(None)
-	#bsw: Optional[Union[float,List[float]]] = Field(None)
-	#wor: Optional[Union[float,List[float]]] = Field(None)
-	#gor: Optional[Union[float,List[float]]] = Field(None)
-	#glr: Optional[Union[float,List[float]]] = Field(None)
 	cashflow_in : Optional[CashFlowInput] = Field(None)
 	cashflow_out : Optional[CashFlowModel] = Field(None)
 	depends: Optional[str] = Field(None)
@@ -55,7 +54,7 @@ class Period(BaseModel):
 
 	def generate_forecast(self):
 		self.forecast = self.dca.forecast(
-			start=self.start, end=self.end, freq_input=self.freq_input, 
+			time_list = self.time_list,start=self.start, end=self.end, freq_input=self.freq_input, 
 			freq_output=self.freq_output, rate_limit=self.rate_limit, 
    			cum_limit=self.cum_limit
       	)
@@ -80,7 +79,8 @@ class Period(BaseModel):
 							start = self.forecast.index.min().strftime('%Y-%m-%d'),
 							end = self.forecast.index.max().strftime('%Y-%m-%d'),
 							freq = self.freq_output,
-							chgpts = [ChgPts(time=capex_date, value=self.cashflow_in.capex)] if isinstance(self.cashflow_in.capex,float) else  self.cashflow_in.capex
+							chgpts = [ChgPts(time=capex_date, value=self.cashflow_in.capex)] if isinstance(self.cashflow_in.capex,float) else  self.cashflow_in.capex,
+							agg_func = 'sum'
 						)				
 					)
 
@@ -93,7 +93,8 @@ class Period(BaseModel):
 							start = self.forecast.index.min().strftime('%Y-%m-%d'),
 							end = self.forecast.index.max().strftime('%Y-%m-%d'),
 							freq = self.freq_output,
-							chgpts = [ChgPts(time=abandonment_date, value=self.cashflow_in.capex)] if isinstance(self.cashflow_in.abandonment,float) else  self.cashflow_in.abandonment
+							chgpts = [ChgPts(time=abandonment_date, value=self.cashflow_in.capex)] if isinstance(self.cashflow_in.abandonment,float) else  self.cashflow_in.abandonment,
+							agg_func = 'sum'
 						)				
 					)
 
@@ -106,8 +107,8 @@ class Period(BaseModel):
 							start = self.forecast.index.min().strftime('%Y-%m-%d'),
 							end = None if isinstance(self.cashflow_in.fix_opex,float) else self.forecast.index.max().strftime('%Y-%m-%d'),
 							freq = self.freq_output,
-							chgpts = None if isinstance(self.cashflow_in.fix_opex,float) else  self.cashflow_in.fix_opex
-
+							chgpts = None if isinstance(self.cashflow_in.fix_opex,float) else  self.cashflow_in.fix_opex,
+							agg_func = 'sum'
 						)
 					)
 
@@ -119,7 +120,8 @@ class Period(BaseModel):
 							start = self.forecast.index.min().strftime('%Y-%m-%d'),
 							end = None if isinstance(self.cashflow_in.oil_var_opex,float) else self.forecast.index.max().strftime('%Y-%m-%d'),
 							freq = self.freq_output,
-							chgpts = None if isinstance(self.cashflow_in.oil_var_opex,float) else  self.cashflow_in.oil_var_opex
+							chgpts = None if isinstance(self.cashflow_in.oil_var_opex,float) else  self.cashflow_in.oil_var_opex,
+							agg_func = 'sum'
 
 						)
 					)
@@ -133,8 +135,8 @@ class Period(BaseModel):
 								start = self.forecast.index.min().strftime('%Y-%m-%d'),
 								end = None if isinstance(self.cashflow_in.gas_var_opex,float) else self.forecast.index.max().strftime('%Y-%m-%d'),
 								freq = self.freq_output,
-								chgpts = None if isinstance(self.cashflow_in.gas_var_opex,float) else  self.cashflow_in.gas_var_opex
-
+								chgpts = None if isinstance(self.cashflow_in.gas_var_opex,float) else  self.cashflow_in.gas_var_opex,
+								agg_func = 'sum'
 							)
 						)
 
@@ -146,8 +148,8 @@ class Period(BaseModel):
 							start = self.forecast.index.min().strftime('%Y-%m-%d'),
 							end = None if isinstance(self.cashflow_in.oil_price,float) else self.forecast.index.max().strftime('%Y-%m-%d'),
 							freq = self.freq_output,
-							chgpts = None if isinstance(self.cashflow_in.oil_price,float) else  self.cashflow_in.oil_price
-
+							chgpts = None if isinstance(self.cashflow_in.oil_price,float) else  self.cashflow_in.oil_price,
+							agg_func = 'sum'
 						)
 					)
 
@@ -160,8 +162,8 @@ class Period(BaseModel):
 								start = self.forecast.index.min().strftime('%Y-%m-%d'),
 								end = None if isinstance(self.cashflow_in.gas_price,float) else self.forecast.index.max().strftime('%Y-%m-%d'),
 								freq = self.freq_output,
-								chgpts = None if isinstance(self.cashflow_in.gas_price,float) else  self.cashflow_in.gas_price
-
+								chgpts = None if isinstance(self.cashflow_in.gas_price,float) else  self.cashflow_in.gas_price,
+								agg_func = 'sum'
 							)
 						)
 
