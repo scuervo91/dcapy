@@ -8,7 +8,6 @@ from dcapy.models import CashFlow, ChgPts, CashFlowGroup, CashFlowModel, CashFlo
 
 import numpy as np 
 import pandas as pd
-from cashflows2.timeseries import cashflow
 from datetime import date
 
 
