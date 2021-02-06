@@ -4,41 +4,11 @@ print(path)
 import sys
 sys.path.insert(0,path)
 from dcapy import dca
-from dcapy.models import CashFlow, ChgPts, CashFlowGroup, CashFlowModel, CashFlowInput, Period
+from dcapy.models import CashFlow, ChgPts, CashFlowModel, CashFlowInput, Period
 
 import numpy as np 
 import pandas as pd
 from datetime import date
-
-
-chgpts1 = ChgPts(time = '2021-07-01', value = -2000)
-
-csh = CashFlow(
-    name = 'capex',
-    const_value = 0,
-    start = '2021-01-01',
-    end = '2021-12-01',
-    freq = 'M',
-    chgpts = [chgpts1]
-	)
-
-#print(csh.dict())
-#print(csh.cashflow())
-
-
-chgpts2 = [chgpts1,ChgPts(time = '2022-07-01', value = -4000),ChgPts(time = '2025-07-01', value = -6000)]
-csh2 = CashFlow(
-    name = 'capex1',
-    const_value = 0,
-    start = '2021-01-01',
-    end = '2028-12-01',
-    freq = 'A',
-    chgpts = chgpts2
-	)
-
-#print(csh2.dict())
-#print(csh2.cashflow())
-
 
 ### case
 data = {
@@ -55,32 +25,34 @@ data = {
     'end':'2021-06-01',
     'freq_input':'M',
     'freq_output':'M',
-    'cashflow_in':{
-    	'capex':-2e6,
-    	'oil_var_opex': -10,
-    	'fix_opex':-20000,
-    	'abandonment':[
+    'cashflow_params':{
+        'params_list' : [
             {
-    		'time':'2021-04-01',
-    		'value':'-4e5'
-    	   },
+                'name':'oil_var_opex',
+                'const_value':7,
+                'multiply':'oil_rate',
+                'target':'opex'
+            },
             {
-            'time':'2021-06-01',
-            'value':'-4.5e5'
-           },
-        ]
-    }
-
+                'name':'oil_price',
+                'array_values':{
+                    'date':['2021-01-01','2021-02-01','2021-03-01','2021-04-01','2021-05-01','2021-06-01'],
+                    'value':[38,42,45,50,55,39]
+                },
+                'multiply':'oil_volume',
+                'target':'income'
+            }
+        ]}
 }
 
 
 p1 = Period(**data)
 
 p1.generate_forecast()
-p1.generate_cashflow()
+
 
 print(p1.forecast)
-print(p1.cashflow_out.capex.cashflows[1].cashflow())
+print(p1.generate_cashflow().income[0].get_cashflow(freq_output='M'))
 
 #print(cashflow(const_value=[-2000.0]*6, start=date(2021,1,1), freq='M'))
 

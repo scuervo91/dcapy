@@ -531,34 +531,34 @@ class Arps(BaseModel,DCA):
         _iterations = np.repeat(np.arange(0,iter),_forecast.shape[0]/iter) #if n is not None else np.zeros(_forecast.shape)
         _forecast_df = pd.DataFrame(
             {
-                'rate':np.squeeze(_forecast),
-                'cumulative':np.squeeze(_cumulative),
+                'oil_rate':np.squeeze(_forecast),
+                'oil_cum':np.squeeze(_cumulative),
                 'iteration':_iterations
             },
                 index=np.tile(time_range,iter) #if n is not None else time_range)
         )
 
         for i in _forecast_df['iteration'].unique():
-            _forecast_df.loc[_forecast_df['iteration']==i,'volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'cumulative'].values,prepend=0)
+            _forecast_df.loc[_forecast_df['iteration']==i,'oil_volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'oil_cum'].values,prepend=0)
                 
         #Water Rate
         if any([i is not None for i in [self.fluid_rate,self.bsw,self.wor]]):
                               
             if self.fluid_rate:
                 _forecast_df['fluid_rate'] = self.fluid_rate if isinstance(self.fluid_rate,float) else np.tile(self.fluid_rate,iter)
-                _forecast_df['water_rate'] = _forecast_df['fluid_rate'] - _forecast_df['rate']
+                _forecast_df['water_rate'] = _forecast_df['fluid_rate'] - _forecast_df['oil_rate']
                 _forecast_df['bsw'] = _forecast_df['water_rate'] / _forecast_df['fluid_rate']
-                _forecast_df['wor'] = _forecast_df['water_rate'] / _forecast_df['rate']
+                _forecast_df['wor'] = _forecast_df['water_rate'] / _forecast_df['oil_rate']
             elif self.bsw:
                 _forecast_df['bsw'] = self.bsw if isinstance(self.bsw,float) else np.tile(self.bsw,iter)
-                _forecast_df['water_rate'] = (_forecast_df['bsw']*_forecast_df['rate'])/(1-_forecast_df['bsw'])
-                _forecast_df['fluid_rate'] = _forecast_df['rate'] + _forecast_df['water_rate']
-                _forecast_df['wor'] = _forecast_df['water_rate'] / _forecast_df['rate']
+                _forecast_df['water_rate'] = (_forecast_df['bsw']*_forecast_df['oil_rate'])/(1-_forecast_df['bsw'])
+                _forecast_df['fluid_rate'] = _forecast_df['oil_rate'] + _forecast_df['water_rate']
+                _forecast_df['wor'] = _forecast_df['water_rate'] / _forecast_df['oil_rate']
             else:
                 _forecast_df['wor'] = self.wor if isinstance(self.wor,float) else np.tile(self.wor,iter)
                 _forecast_df['bsw'] = _forecast_df['wor']/(_forecast_df['wor']+1)
-                _forecast_df['water_rate'] = (_forecast_df['bsw']*_forecast_df['rate'])/(1-_forecast_df['bsw'])
-                _forecast_df['fluid_rate'] = _forecast_df['rate'] + _forecast_df['water_rate']
+                _forecast_df['water_rate'] = (_forecast_df['bsw']*_forecast_df['oil_rate'])/(1-_forecast_df['bsw'])
+                _forecast_df['fluid_rate'] = _forecast_df['oil_rate'] + _forecast_df['water_rate']
             
             for i in _forecast_df['iteration'].unique():
                 _f_index = _forecast_df.loc[_forecast_df['iteration']==i].index
@@ -577,11 +577,11 @@ class Arps(BaseModel,DCA):
                               
             if self.gor:
                 _forecast_df['gor'] = self.gor if isinstance(self.gor,float) else np.tile(self.gor,iter)
-                _forecast_df['gas_rate'] = _forecast_df['rate'] * _forecast_df['gor']
+                _forecast_df['gas_rate'] = _forecast_df['oil_rate'] * _forecast_df['gor']
             elif self.glr and 'fluid_rate' in _forecast_df.columns:
                 _forecast_df['glr'] = self.glr if isinstance(self.glr,float) else np.tile(self.glr,iter)
                 _forecast_df['gas_rate'] = _forecast_df['fluid_rate'] * _forecast_df['glr']
-                _forecast_df['gor'] = _forecast_df['gas_rate'] / _forecast_df['rate']
+                _forecast_df['gor'] = _forecast_df['gas_rate'] / _forecast_df['oil_rate']
             
             for i in _forecast_df['iteration'].unique():
                 _f_index = _forecast_df.loc[_forecast_df['iteration']==i].index
@@ -686,7 +686,7 @@ class Arps(BaseModel,DCA):
             self.ti = x[total_filter==0][0]
             self.b = b
             
-        return pd.DataFrame({'time':x,'rate':y,'filter':total_filter})
+        return pd.DataFrame({'time':x,'oil_rate':y,'filter':total_filter})
         
         
     def plot(self, start:Union[float,date]=None, end:Union[float,date]=None,
@@ -769,12 +769,12 @@ class Arps(BaseModel,DCA):
 
         #Plotting
         time_axis = f.index.to_timestamp() if self.format()=='date' else f.index
-        sns.lineplot(data=f, x=time_axis, y='rate', hue='iteration',**rate_kw, ax=dax)
-        #dax.plot(time_axis,f['rate'],**rate_kw)   
+        sns.lineplot(data=f, x=time_axis, y='oil_rate', hue='iteration',**rate_kw, ax=dax)
+        #dax.plot(time_axis,f['oil_rate'],**rate_kw)   
 
         if cum:
             cumax=dax.twinx()
-            cumax.plot(time_axis,f['cumulative'],**cum_kw)  
+            cumax.plot(time_axis,f['oil_cum'],**cum_kw)  
 
 
                 

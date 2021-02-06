@@ -56,12 +56,12 @@ class CashFlow(BaseModel):
 
         #Create the timeSeries either with dates or integers
         if isinstance(self.const_value, list):
-            periods = len(const_value)
+            periods = len(self.const_value)
         prng = pd.period_range(start=self.start, end=self.end, periods=self.periods, freq=self.freq) if isinstance(self.start,date) else np.arange(self.start, self.end,1)
         periods = len(prng)
         if not isinstance(self.const_value, list):
             const_value = [self.const_value] * periods
-        time_series = pd.Series(data=const_value, index=prng, dtype=np.float64)
+        time_series = pd.Series(data=self.const_value, index=prng, dtype=np.float64)
 
         #If the change points exists. Iterate overt the chgpts as zip to
         #assign each index to corresponding cashflow time

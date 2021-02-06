@@ -42,7 +42,7 @@ class Period(BaseModel):
 	freq_output: Literal['M','D','A'] = Field('M')
 	rate_limit: Optional[float] = Field(None, ge=0)
 	cum_limit: Optional[float] = Field(None, ge=0)
-	cashflow_in : Optional[CashFlowInput] = Field(None)
+	cashflow_params : Optional[CashFlowInput] = Field(None)
 	cashflow_out : Optional[CashFlowModel] = Field(None)
 	depends: Optional[str] = Field(None)
 	forecast: Optional[pd.DataFrame] = Field(None)
@@ -75,7 +75,7 @@ class Period(BaseModel):
 
 	def generate_cashflow(self):
 
-		if self.forecast is not None and self.cashflow_in is not None:
+		if self.forecast is not None and self.cashflow_params is not None:
 			capex_sched = []
 			opex_sched = []
 			income_sched = []
@@ -83,11 +83,11 @@ class Period(BaseModel):
 			is_date_mode = self.date_mode()
 			#Format date
 			cashflow_model_dict = {}
-			for param in self.cashflow_in.params_list:
+			for param in self.cashflow_params.params_list:
 				#initialize the individual cashflow dict
 
-				if self.cashflow_in.target not in cashflow_model_dict.keys():
-					cashflow_model_dict[self.cashflow_in.target] = []
+				if param.target not in cashflow_model_dict.keys():
+					cashflow_model_dict[param.target] = []
 
 				cashflow_dict = {}
 
@@ -108,19 +108,19 @@ class Period(BaseModel):
 						multiply_col = param.multiply
 					else:
 						print(f'{param.multiply} is not in forecast columns. {self.forecast.columns}')
-						contunue
+						continue
 
 
-					if params.const_value:
-						_const_value = self.forecast[multiply_col].multiply(params.const_value)
+					if param.const_value:
+						_const_value = self.forecast[multiply_col].multiply(param.const_value)
 						cashflow_dict.update({'const_value':_const_value.tolist()})
 
-					if params.array_values:
+					if param.array_values:
 
 						#If the array values date is a datetime.date convert to output frecuency
 						#to be consistent with the freq of the forecast when multiply
-						idx = pd.to_datetime(params.array_values.date).to_period(self.freq_output) if is_date_mode  else params.array_values.date
-						values_series = pd.Series(params.array_values.value, index=idx)
+						idx = pd.to_datetime(param.array_values.date).to_period(self.freq_output) if is_date_mode  else param.array_values.date
+						values_series = pd.Series(param.array_values.value, index=idx)
 
 						_array_values = self.forecast[multiply_col].multiply(values_series).dropna()
 
@@ -137,11 +137,11 @@ class Period(BaseModel):
 				else:
 					cashflow_dict.update({
 						'const_value':param.const_value,
-						'chgpts': params.chgpts
+						'chgpts': param.chgpts
 					})
 
 
-				cashflow_model_dict[self.cashflow_in.target].append(cashflow_dict)
+				cashflow_model_dict[param.target].append(cashflow_dict)
 
 			#Check all keys are not empty. Otherwise delete them
 
