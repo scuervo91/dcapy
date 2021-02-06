@@ -40,7 +40,8 @@ print('Cashflow with int')
 
 cash_data2 = {
 	'name':'capex_test2',
-	'start':0,
+	'const_value': 10,
+	'start':5,
 	'end':20,
 	'freq':'M',
 	'chgpts':chg_data2

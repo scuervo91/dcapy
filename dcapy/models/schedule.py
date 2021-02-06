@@ -1,6 +1,6 @@
 #External Imports
 from typing import Union, Optional, List, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from datetime import date, timedelta
 import pandas as pd
 import numpy as np
@@ -8,7 +8,7 @@ import numpy as np
 #Local Imports
 from ..dca import Arps
 from ..dca import FreqEnum
-from .cashflow import CashFlowInput, CashFlowModel, CashFlow, ChgPts, CashFlowGroup
+from .cashflow import CashFlowInput, CashFlowModel, CashFlow, ChgPts
 
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
 # the input dca is a subclass of DCA. 
@@ -47,18 +47,31 @@ class Period(BaseModel):
 	depends: Optional[str] = Field(None)
 	forecast: Optional[pd.DataFrame] = Field(None)
 
+	@validator('end')
+	def start_end_match_type(cls,v,values):
+	    if type(v) != type(values['start']):
+	        raise ValueError('start and end must be the same type')
+	    return v
+
 	class Config:
 		arbitrary_types_allowed = True
 		validate_assignment = True
-		title = 'PeriodSchedule'
+
+	def date_mode(self):
+		if isinstance(self.start,date):
+			return True
+		if isinstance(self.start,int):
+			return False
 
 	def generate_forecast(self):
-		self.forecast = self.dca.forecast(
+		_forecast = self.dca.forecast(
 			time_list = self.time_list,start=self.start, end=self.end, freq_input=self.freq_input, 
 			freq_output=self.freq_output, rate_limit=self.rate_limit, 
    			cum_limit=self.cum_limit
-      	)
-		return self.forecast
+		)
+		_forecast['period'] = self.name
+		self.forecast = _forecast
+		return _forecast
 
 	def generate_cashflow(self):
 
@@ -66,36 +79,79 @@ class Period(BaseModel):
 			capex_sched = []
 			opex_sched = []
 			income_sched = []
-			if self.cashflow_in:
-				#Format date
-				fmt = freq_format[self.freq_output]
-				if self.cashflow_in.capex:
-					# * cashflow2 only supports dates to define a cashflow. 
-					
+
+			is_date_mode = self.date_mode()
+			#Format date
+			cashflow_model_dict = {}
+			for param in self.cashflow_in.params_list:
+				#initialize the individual cashflow dict
+
+				if self.cashflow_in.target not in cashflow_model_dict.keys():
+					cashflow_model_dict[self.cashflow_in.target] = []
+
+				cashflow_dict = {}
+
+				#set the name
+				cashflow_dict.update({
+					'name':param.name,
+					'start':self.forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else self.forecast.index.min(),
+					'end':self.forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else self.forecast.index.max(),
+					'freq':self.freq_output
+				})
 
 
+				if param.multiply:
+					#Forecast Column name to multiply the param
+
+					#Check if the column exist in the forecast pandas dataframe
+					if param.multiply in self.forecast.columns:
+						multiply_col = param.multiply
+					else:
+						print(f'{param.multiply} is not in forecast columns. {self.forecast.columns}')
+						contunue
 
 
-					capex_date = self.start.strftime('%Y-%m-%d')
-					capex_sched.append(
-	        			CashFlow(
-	        				name = 'CAPEX',
-	        				const_value=0,
-							start = self.forecast.index.min().strftime('%Y-%m-%d'),
-							end = self.forecast.index.max().strftime('%Y-%m-%d'),
-							freq = self.freq_output,
-							chgpts = [ChgPts(time=capex_date, value=self.cashflow_in.capex)] if isinstance(self.cashflow_in.capex,float) else  self.cashflow_in.capex,
-							agg_func = 'sum'
-						)				
-					)
+					if params.const_value:
+						_const_value = self.forecast[multiply_col].multiply(params.const_value)
+						cashflow_dict.update({'const_value':_const_value.tolist()})
+
+					if params.array_values:
+
+						#If the array values date is a datetime.date convert to output frecuency
+						#to be consistent with the freq of the forecast when multiply
+						idx = pd.to_datetime(params.array_values.date).to_period(self.freq_output) if is_date_mode  else params.array_values.date
+						values_series = pd.Series(params.array_values.value, index=idx)
+
+						_array_values = self.forecast[multiply_col].multiply(values_series).dropna()
+
+						if _array_values.empty:
+							print(f'param {param.name} array values not multiplied with forecast. There is no index match')
+						else:
+							cashflow_dict.update({
+								'chgpts':{
+									'date':_array_values.index.strftime('%Y-%m-%d').tolist(),
+									'value':_array_values.tolist()
+								}
+							})
+
+				else:
+					cashflow_dict.update({
+						'const_value':param.const_value,
+						'chgpts': params.chgpts
+					})
 
 
-			self.cashflow_out = CashFlowModel(
-					capex = CashFlowGroup(name='capex',cashflows=capex_sched) if len(capex_sched)>0 else None,
-					opex = CashFlowGroup(name='opex',cashflows=opex_sched) if len(opex_sched)>0 else None,
-					income = CashFlowGroup(name='income',cashflows=income_sched) if len(income_sched)>0 else None
-				)  
-			return self.cashflow_out
+				cashflow_model_dict[self.cashflow_in.target].append(cashflow_dict)
+
+			#Check all keys are not empty. Otherwise delete them
+
+			for key in cashflow_model_dict:
+				if len(cashflow_model_dict[key]) == 0:
+					del cashflow_model_dict[key]
+
+			cashflow_model = CashFlowModel(**cashflow_model_dict)
+
+			return cashflow_model
 	
 
 class Scenario(BaseModel):

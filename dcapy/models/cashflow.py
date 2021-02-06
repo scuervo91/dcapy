@@ -30,7 +30,6 @@ class CashFlow(BaseModel):
     periods : Optional[int] = Field(None)
     freq: Literal['M','D','A'] = Field('M')
     chgpts: Optional[ChgPts] = Field(None)
-    agg_func : Literal['sum','mean'] = Field('mean')
 
     @validator('end')
     def start_end_match_type(cls,v,values):
@@ -75,7 +74,7 @@ class CashFlow(BaseModel):
                 k = i[1]
 
                 if idx in time_series.index:
-                    time_series[idx] = k 
+                    time_series[idx] = k
 
         #If the cashflow is in dates. There is the posibility to change the frequency of the output
         #cashflow. For ejample, if the CashFlow is initiated in months, you can specify the 
@@ -102,18 +101,10 @@ class CashFlowInput(BaseModel):
     class Config:
         validate_assignment = True
         arbitrary_types_allowed = True
-    
-class CashFlowGroup(BaseModel):
-    name : str 
-    cashflows : List[CashFlow]
-    
-    class Config:
-        arbitrary_types_allowed = True
-        validate_assignment = True
-        
+          
 class CashFlowModel(BaseModel):
-    income : Optional[CashFlowGroup]
-    opex : Optional[CashFlowGroup]
-    capex : Optional[CashFlowGroup]
+    income : Optional[List[CashFlow]]
+    opex : Optional[List[CashFlow]]
+    capex : Optional[List[CashFlow]]
     
 
