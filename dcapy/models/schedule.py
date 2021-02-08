@@ -24,14 +24,6 @@ freq_format={
 
 
 
-
-class PeriodResult(BaseModel):
-	forecast : pd.DataFrame 
-	cashflow : Optional[CashFlowModel]
-	class Config:
-		arbitrary_types_allowed = True
-		validate_assignment = True
-
 class Period(BaseModel):
 	name : str
 	dca : union_classes_dca 
