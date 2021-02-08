@@ -152,6 +152,37 @@ class Scenario(BaseModel):
 	class Config:
 		arbitrary_types_allowed = True
 		validate_assignment = True
+
+	# TODO: Make validation for all periods are in the same time basis (Integers or date)
+
+	def generate_forecast(self, periods:list = None):
+
+		#Make filter
+		if periods:
+			_periods = [i for i in self.periods if i.name in periods]
+		else:
+			_periods = self.periods
+
+
+		list_forecast = []
+		list_periods_errors = []
+
+		for p in _periods:
+
+			try:
+				_f = p.generate_forecast()
+			except Exception as e:
+				print(e)
+				list_periods_errors.append(p.name)
+			else:
+				list_forecast.append(_f)
+
+
+		scenario_forecast = pd.concat(list_forecast, axis=0)
+		scenario_forecast['scenario'] = self.name
+
+		return scenario_forecast
+
   
  
 class Schedule(BaseModel):
