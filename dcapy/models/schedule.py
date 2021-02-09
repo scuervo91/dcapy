@@ -68,9 +68,6 @@ class Period(BaseModel):
 	def generate_cashflow(self):
 
 		if self.forecast is not None and self.cashflow_params is not None:
-			capex_sched = []
-			opex_sched = []
-			income_sched = []
 
 			is_date_mode = self.date_mode()
 			#Format date
@@ -142,6 +139,7 @@ class Period(BaseModel):
 					del cashflow_model_dict[key]
 
 			cashflow_model = CashFlowModel(**cashflow_model_dict)
+			self.cashflow_out = cashflow_model
 
 			return cashflow_model
 	
@@ -187,7 +185,10 @@ class Scenario(BaseModel):
  
 class Schedule(BaseModel):
 	name : str
-	schedules : List[Scenario]
+	scenarios : List[Scenario]
 	class Config:
 		arbitrary_types_allowed = True
-		validate_assignment = True
+		validate_assignment = True 
+
+
+
