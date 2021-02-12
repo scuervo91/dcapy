@@ -6,15 +6,14 @@ import pandas as pd
 import numpy as np
 
 #Local Imports
-from ..dca import Arps
-from ..dca import FreqEnum
+from ..dca import Arps, Wor, FreqEnum
 from .cashflow import CashFlowInput, CashFlowModel, CashFlow, ChgPts
 
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
 # the input dca is a subclass of DCA. 
 # Still I don't know if there's a way Pydantic check if a input variable is subclass of other class
 #Example.  Check y Arps is subclass of DCA
-union_classes_dca = Union[Arps]
+union_classes_dca = Union[Arps,Wor]
 
 freq_format={
     'M':'%Y-%m',
@@ -101,7 +100,7 @@ class Period(BaseModel):
 
 
 					if param.const_value:
-						_const_value = self.forecast[multiply_col].multiply(param.const_value)
+						_const_value = self.forecast[multiply_col].multiply(param.const_value).multiply(param.wi)
 						cashflow_dict.update({'const_value':_const_value.tolist()})
 
 					if param.array_values:
@@ -111,7 +110,7 @@ class Period(BaseModel):
 						idx = pd.to_datetime(param.array_values.date).to_period(self.freq_output) if is_date_mode  else param.array_values.date
 						values_series = pd.Series(param.array_values.value, index=idx)
 
-						_array_values = self.forecast[multiply_col].multiply(values_series).dropna()
+						_array_values = self.forecast[multiply_col].multiply(values_series).multiply(param.wi).dropna()
 
 						if _array_values.empty:
 							print(f'param {param.name} array values not multiplied with forecast. There is no index match')
@@ -125,8 +124,8 @@ class Period(BaseModel):
 
 				else:
 					cashflow_dict.update({
-						'const_value':param.const_value,
-						'chgpts': param.chgpts
+						'const_value':param.const_value * param*wi,
+						'chgpts': ChgPts(date = param.chgpts.date, value = param.chgpts.date.param.wi)
 					})
 
 

@@ -436,7 +436,7 @@ class Arps(BaseModel,DCA):
         return arps_rate_time(qi,di,b,rate)
     
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, end:Union[date,float]=None, rate_limit:float=None,
-                 cum_limit:float=None, freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None)->pd.DataFrame:
+                 cum_limit:float=None, freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None, **kwargs)->pd.DataFrame:
         """forecast Estimate the forecast given the Arps parameters, dates and limits.
 
         Parameters

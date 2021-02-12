@@ -18,17 +18,16 @@ def main():
     slope = [3.5e-6,3e-6,4e-6]
     ti =  date(2021,1,1)
 
-    w1 = dca.Wor(bsw=bsw,slope=slope,ti=ti)
+    w1 = dca.Wor(bsw=bsw,slope=slope,ti=ti, glr=0.3, fluid_rate = 1000,)
 
     print(w1.json())
 
     data = dict(
     start = date(2021,1,1),
     end = date(2021,1,10),
-    fluid_rate = 1000,
     freq_input = 'D',
     freq_output = 'D',
-
+    rate_limit = 480,
     )
     print(w1.forecast(**data))
 

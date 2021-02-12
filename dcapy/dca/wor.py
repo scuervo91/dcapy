@@ -102,10 +102,12 @@ class Wor(BaseModel,DCA):
 
     bsw: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
     slope: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
+    fluid_rate : Union[float,List[float],List[List[float]]] = Field(...)
     ti: Union[int,date] = Field(...)
     seed : Optional[int] = Field(None)
     gor: Optional[Union[float,List[float]]] = Field(None)
     glr: Optional[Union[float,List[float]]] = Field(None)
+
 
     class Config:
         arbitrary_types_allowed = True
@@ -142,7 +144,7 @@ class Wor(BaseModel,DCA):
 
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, 
     	end:Union[date,float]=None, fluid_rate:Union[float,list]=None,rate_limit:float=None,cum_limit:float=None, wor_limit:float=None,
-    	freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None)->pd.DataFrame:
+    	freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None,**kwargs)->pd.DataFrame:
 
         if self.format() == 'date':
 
@@ -187,7 +189,7 @@ class Wor(BaseModel,DCA):
         #
         #If the result is 1D, the length of the vector is the number of iterations will be performed
         #This vector is broadcasted to a 2D array that match the time_array shape
-        fluid_rate = np.atleast_1d(fluid_rate)
+        fluid_rate = np.atleast_1d(self.fluid_rate)
 
         #Broadcast three variables
         br = np.broadcast(bsw,slope,np.zeros(fluid_rate.shape[0]))
@@ -196,7 +198,6 @@ class Wor(BaseModel,DCA):
         _bsw = bsw * np.ones(br.shape)
         _slope = slope * np.ones(br.shape)
 
-        print(_bsw,_slope)
         # make the fluid array to be consistent with the time array
         if fluid_rate.ndim == 1:
             _fluid = fluid_rate.reshape(-1,1) * np.ones((br.shape[0],time_array.shape[0]))
@@ -204,7 +205,6 @@ class Wor(BaseModel,DCA):
             br2 = np.broadcast(np.zeros(fluid_rate.shape[1]),time_array)
             _fluid = fluid_rate * np.ones(br2.shape)
 
-        print(_fluid)
 
         # Make the loop for the forecast
         list_forecast = []
@@ -213,14 +213,32 @@ class Wor(BaseModel,DCA):
             _wor = bsw_to_wor(_bsw[i])
             freq_factor = converter_factor('D',freq_input)
 
-            
+
+            #The fluid rate is multiplied by a factor to estimate the cumulative production.            
             _f = wor_forecast(time_array,_fluid[i]*freq_factor, _slope[i], _wor, rate_limit=rate_limit,
                 cum_limit=cum_limit, wor_limit=wor_limit)
 
+            #Convert the rates in daily 
             _f[['oil_rate','water_rate']] = _f[['oil_rate','water_rate']]/freq_factor
 
             _f['iteration'] = i
-            _f.index = time_range[1:]
+            _f.index = time_range[1:_f.shape[0]+1]
+
+            _f['oil_volume'] = np.diff(_f['oil_cum'].values,prepend=0)
+            _f['water_volume'] = np.diff(_f['water_cum'].values,prepend=0)
+ 
+
+            #Gas Rate
+            if any([i is not None for i in [self.gor,self.glr]]):
+
+                if self.gor:
+                    _f['gas_cum'] = _f['oil_cum'].multiply(self.gor) 
+                    _f['gas_volume'] = np.diff(_f['gas_cum'], prepend=0) / _f['delta_time']
+                    _f['gas_rate'] = _f['gas_volume'] / _f['delta_time']
+                elif self.glr:
+                    _f['gas_cum'] = _f['oil_cum'].add(_f['water_cum']).multiply(self.glr) 
+                    _f['gas_volume'] = np.diff(_f['gas_cum'], prepend=0) / _f['delta_time']
+                    _f['gas_rate'] = _f['gas_volume'] / _f['delta_time']
 
 
             list_forecast.append(_f)

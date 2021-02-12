@@ -17,7 +17,7 @@ def main():
     ti = 0
     di_f = 'A'
     print(f' ->qi {qi}\n -> di {di}\n b {b}\n ->di_freq {di_f}')  
-    dc = dca.Arps(qi,di,b,ti,freq_di=di_f)
+    dc = dca.Arps(qi=qi,di=di,b=b,ti=ti,freq_di=di_f)
     
     print('Calculate Daily Basis each day')
     print(dc.forecast(start=0,end=31,freq_input='D',freq_output='D'))

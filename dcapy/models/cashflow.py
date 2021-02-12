@@ -93,6 +93,7 @@ class CashFlowParams(BaseModel):
     target : Literal['income','opex','capex']
     multiply : Optional[str]
     agg : Literal['sum','mean'] = Field('sum')
+    wi : float = Field(1,ge=0,le=1)
 
 
 class CashFlowInput(BaseModel):

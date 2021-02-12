@@ -55,5 +55,3 @@ print(p1.forecast)
 print(p1.generate_cashflow().income[0].get_cashflow(freq_output='M'))
 
 #print(cashflow(const_value=[-2000.0]*6, start=date(2021,1,1), freq='M'))
-
-

@@ -19,7 +19,7 @@ def main():
     wori = dca.bsw_to_wor(bswi)
     fluid_rate = [1000]*20
     print(f'initial wor {wori}')
-    f1 = dca.wor_forecast(time1,fluid_rate,slope,wori, rate_limit=None, wor_limit=None, np_limit=1e5)
+    f1 = dca.wor_forecast(time1,fluid_rate,slope,wori, rate_limit=None, wor_limit=None, cum_limit=1e5)
     print('Forecast Example 1')
     print(f1)
     print(f1.shape)
