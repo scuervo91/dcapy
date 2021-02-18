@@ -70,7 +70,7 @@ class Period(BaseModel):
 
 			is_date_mode = self.date_mode()
 			#Format date
-			cashflow_model_dict = {}
+			cashflow_model_dict = {'name':self.name}
 			for param in self.cashflow_params.params_list:
 				#initialize the individual cashflow dict
 
@@ -124,7 +124,7 @@ class Period(BaseModel):
 
 				else:
 					cashflow_dict.update({
-						'const_value':param.const_value * param*wi,
+						'const_value':param.const_value * param.wi,
 						'chgpts': ChgPts(date = param.chgpts.date, value = param.chgpts.date.param.wi)
 					})
 
@@ -137,6 +137,8 @@ class Period(BaseModel):
 				if len(cashflow_model_dict[key]) == 0:
 					del cashflow_model_dict[key]
 
+
+
 			cashflow_model = CashFlowModel(**cashflow_model_dict)
 			self.cashflow_out = cashflow_model
 
@@ -146,6 +148,7 @@ class Period(BaseModel):
 class Scenario(BaseModel):
 	name : str
 	periods: List[Period]
+	cashflow : Optional[CashFlowModel] = Field(None)
 	class Config:
 		arbitrary_types_allowed = True
 		validate_assignment = True
@@ -180,11 +183,36 @@ class Scenario(BaseModel):
 
 		return scenario_forecast
 
-  
+	def generate_cashflow(self,periods:list = None):
+
+		#Make filter
+		if periods:
+			_periods = [i for i in self.periods if i.name in periods]
+		else:
+			_periods = self.periods
+
+
+		cashflow_model = CashFlowModel(name=self.name)
+		list_periods_errors = []
+		for p in _periods:
+
+			try:
+				_cf = p.generate_cashflow()
+			except Exception as e:
+				print(e)
+				list_periods_errors.append(p.name)
+			else:
+				cashflow_model.append(_cf)
+
+		self.cashflow = cashflow_model
+
+		return cashflow_model
+
  
 class Schedule(BaseModel):
 	name : str
 	scenarios : List[Scenario]
+	cashflows : Optional[List[CashFlowModel]]
 	class Config:
 		arbitrary_types_allowed = True
 		validate_assignment = True 

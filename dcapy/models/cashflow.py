@@ -104,8 +104,38 @@ class CashFlowInput(BaseModel):
         arbitrary_types_allowed = True
           
 class CashFlowModel(BaseModel):
+    name : str
     income : Optional[List[CashFlow]]
     opex : Optional[List[CashFlow]]
     capex : Optional[List[CashFlow]]
+
+    class Config:
+        validate_assignment = True
+        arbitrary_types_allowed = True
+
+
+    def append(self, cashflow_model):
+
+        if cashflow_model.income:
+            if self.income:
+                self.income.extend(cashflow_model.income)
+            else:
+                self.income = cashflow_model.income 
+
+        if cashflow_model.opex:
+            if self.opex:
+                self.opex.extend(cashflow_model.opex)
+            else:
+                self.opex = cashflow_model.opex
+
+        if cashflow_model.capex:
+            if self.capex:
+                self.capex.extend(cashflow_model.capex)
+            else:
+                self.capex = cashflow_model.capex
+
+
+
+
     
 
