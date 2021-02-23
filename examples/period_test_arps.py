@@ -4,7 +4,7 @@ print(path)
 import sys
 sys.path.insert(0,path)
 from dcapy import dca
-from dcapy.models import CashFlow, ChgPts, CashFlowModel, CashFlowInput, Period
+from dcapy.models import CashFlow, ChgPts, CashFlowModel, CashFlowInput, Period, Forecast
 
 import numpy as np 
 import pandas as pd
@@ -50,8 +50,9 @@ p1 = Period(**data)
 
 p1.generate_forecast()
 
-
-print(p1.forecast)
-print(p1.generate_cashflow().income[0].get_cashflow(freq_output='M'))
+fr = Forecast(**p1.forecast.to_timestamp().reset_index().to_dict(orient='list'))
+print(fr.df())
+#print(p1.forecast.columns)
+#print(p1.generate_cashflow().income[0].get_cashflow(freq_output='M'))
 
 #print(cashflow(const_value=[-2000.0]*6, start=date(2021,1,1), freq='M'))

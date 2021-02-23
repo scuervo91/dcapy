@@ -537,7 +537,7 @@ class Arps(BaseModel,DCA):
             },
                 index=np.tile(time_range,iter) #if n is not None else time_range)
         )
-
+        _forecast_df.index.name='date'
         for i in _forecast_df['iteration'].unique():
             _forecast_df.loc[_forecast_df['iteration']==i,'oil_volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'oil_cum'].values,prepend=0)
                 

@@ -113,7 +113,8 @@ class CashFlowModel(BaseModel):
         validate_assignment = True
         arbitrary_types_allowed = True
 
-
+    # TODO: Method to estimate de Free Cash Flow
+    
     def append(self, cashflow_model):
 
         if cashflow_model.income:
