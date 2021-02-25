@@ -135,6 +135,64 @@ class CashFlowModel(BaseModel):
             else:
                 self.capex = cashflow_model.capex
 
+    def fcf(self, freq_output=None):
+        list_df = []
+        if self.income:
+            list_income = []
+            for i in self.income:
+                income_cash = i.get_cashflow(freq_output=freq_output)
+                income_cash.name = i.name
+                list_income.append(income_cash)
+
+            income_df = pd.concat(list_income, axis=1).fillna(0)
+            income_df['total_income'] = income_df.sum(axis=1)
+            list_df.append(income_df)
+
+        if self.opex:
+            list_opex = []
+            for i in self.opex:
+                opex_cash = i.get_cashflow(freq_output=freq_output)
+                opex_cash.name = i.name
+                list_opex.append(opex_cash)
+
+            opex_df = pd.concat(list_opex, axis=1).fillna(0)
+            opex_df['total_opex'] = opex_df.sum(axis=1)
+            list_df.append(opex_df)
+
+        if self.capex:
+            list_capex = []
+            for i in self.capex:
+                capex_cash = i.get_cashflow(freq_output=freq_output)
+                capex_cash.name = i.name
+                list_capex.append(capex_cash)
+
+            capex_df = pd.concat(list_capex, axis=1).fillna(0)
+            capex_df['total_capex'] = capex_df.sum(axis=1)
+            list_df.append(capex_df)
+
+
+        fcf_df = pd.concat(list_df, axis=1)
+
+        for i in ['total_income','total_opex','total_capex']:
+            if i not in fcf_df.columns:
+                fcf_df[i] = 0
+
+        fcf_df['fcf'] = fcf_df[['total_income','total_opex','total_capex']].sum(axis=1)
+
+        fcf_df['cum_fcf'] = fcf_df['fcf'].cumsum()
+
+        return fcf_df
+
+
+
+
+
+
+
+
+
+
+
 
 
 

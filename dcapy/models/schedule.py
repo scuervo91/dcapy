@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 
 #Local Imports
-from ..dca import Arps, Wor, FreqEnum
+from ..dca import Arps, Wor, FreqEnum, Forecast
 from .cashflow import CashFlowInput, CashFlowModel, CashFlow, ChgPts
 
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
@@ -21,37 +21,6 @@ freq_format={
     'A':'%Y'
 }
 
-class Forecast(BaseModel):
-	date : List[Union[date,int]]
-	oil_rate : Optional[List[float]]
-	oil_cum : Optional[List[float]]
-	oil_volume : Optional[List[float]]
-	gas_rate : Optional[List[float]]
-	gas_cum : Optional[List[float]]
-	gas_volume : Optional[List[float]]
-	fluid_rate : Optional[List[float]]
-	water_rate : Optional[List[float]]
-	bsw : Optional[List[float]]
-	wor : Optional[List[float]]
-	water_cum : Optional[List[float]]
-	fluid_cum : Optional[List[float]]
-	water_cum : Optional[List[float]] 
-	fluid_volume : Optional[List[float]] 
-	iteration : Optional[List[int]]
-	period : Optional[List[str]]
-	scenario : Optional[List[str]] 
-	well : Optional[List[str]] 
-	freq : Literal['M','D','A'] = Field('M')
-	
-	def df(self):
-		_forecast_dict = self.dict()
-		freq = _forecast_dict.pop('freq')
-		_fr = pd.DataFrame(_forecast_dict)
-		_fr['date'] = pd.to_datetime(_fr['date'])
-		_fr.set_index('date',inplace=True)
-		_fr = _fr.to_period(freq)
-
-		return _fr
    
   
 class Period(BaseModel):
@@ -65,9 +34,9 @@ class Period(BaseModel):
 	rate_limit: Optional[float] = Field(None, ge=0)
 	cum_limit: Optional[float] = Field(None, ge=0)
 	cashflow_params : Optional[CashFlowInput] = Field(None)
-	cashflow_out : Optional[CashFlowModel] = Field(None)
+	cashflow : Optional[CashFlowModel] = Field(None)
 	depends: Optional[str] = Field(None)
-	forecast: Optional[pd.DataFrame] = Field(None)
+	forecast: Optional[Forecast] = Field(None)
 
 	@validator('end')
 	def start_end_match_type(cls,v,values):
@@ -92,12 +61,18 @@ class Period(BaseModel):
    			cum_limit=self.cum_limit
 		)
 		_forecast['period'] = self.name
-		self.forecast = _forecast
+
+		if isinstance(_forecast.index[0],int):
+			self.forecast = Forecast(freq=self.freq_output,**_forecast.reset_index().to_dict(orient='list'))
+		else:
+			self.forecast = Forecast(freq=self.freq_output,**_forecast.to_timestamp().reset_index().to_dict(orient='list'))
 		return _forecast
 
 	def generate_cashflow(self):
 
 		if self.forecast is not None and self.cashflow_params is not None:
+
+			_forecast = self.forecast.df()
 
 			is_date_mode = self.date_mode()
 			#Format date
@@ -113,8 +88,8 @@ class Period(BaseModel):
 				#set the name
 				cashflow_dict.update({
 					'name':param.name,
-					'start':self.forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else self.forecast.index.min(),
-					'end':self.forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else self.forecast.index.max(),
+					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
+					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
 					'freq':self.freq_output
 				})
 
@@ -123,15 +98,15 @@ class Period(BaseModel):
 					#Forecast Column name to multiply the param
 
 					#Check if the column exist in the forecast pandas dataframe
-					if param.multiply in self.forecast.columns:
+					if param.multiply in _forecast.columns:
 						multiply_col = param.multiply
 					else:
-						print(f'{param.multiply} is not in forecast columns. {self.forecast.columns}')
+						print(f'{param.multiply} is not in forecast columns. {_forecast.columns}')
 						continue
 
 
 					if param.const_value:
-						_const_value = self.forecast[multiply_col].multiply(param.const_value).multiply(param.wi)
+						_const_value = _forecast[multiply_col].multiply(param.const_value).multiply(param.wi)
 						cashflow_dict.update({'const_value':_const_value.tolist()})
 
 					if param.array_values:
@@ -141,7 +116,7 @@ class Period(BaseModel):
 						idx = pd.to_datetime(param.array_values.date).to_period(self.freq_output) if is_date_mode  else param.array_values.date
 						values_series = pd.Series(param.array_values.value, index=idx)
 
-						_array_values = self.forecast[multiply_col].multiply(values_series).multiply(param.wi).dropna()
+						_array_values = _forecast[multiply_col].multiply(values_series).multiply(param.wi).dropna()
 
 						if _array_values.empty:
 							print(f'param {param.name} array values not multiplied with forecast. There is no index match')
@@ -154,10 +129,17 @@ class Period(BaseModel):
 							})
 
 				else:
-					cashflow_dict.update({
-						'const_value':param.const_value * param.wi,
-						'chgpts': ChgPts(date = param.chgpts.date, value = param.chgpts.date.param.wi)
-					})
+					if param.const_value:
+						cashflow_dict.update({
+							'const_value':param.const_value * param.wi,
+						})
+					if param.array_values:
+						cashflow_dict.update({
+							'chgpts': ChgPts(date = param.array_values.date, value = param.array_values.value*param.wi)
+						})
+
+
+
 
 
 				cashflow_model_dict[param.target].append(cashflow_dict)
@@ -171,15 +153,19 @@ class Period(BaseModel):
 
 
 			cashflow_model = CashFlowModel(**cashflow_model_dict)
-			self.cashflow_out = cashflow_model
+			self.cashflow = cashflow_model
 
 			return cashflow_model
+		else:
+			raise ValueError('Either Forecast or Cashflow Params not defined')
 	
 
 class Scenario(BaseModel):
 	name : str
 	periods: List[Period]
+	cashflow_params : Optional[CashFlowInput] = Field(None)
 	cashflow : Optional[CashFlowModel] = Field(None)
+	forecast: Optional[Forecast] = Field(None)
 	class Config:
 		arbitrary_types_allowed = True
 		validate_assignment = True
@@ -212,6 +198,11 @@ class Scenario(BaseModel):
 		scenario_forecast = pd.concat(list_forecast, axis=0)
 		scenario_forecast['scenario'] = self.name
 
+		if isinstance(scenario_forecast.index[0],int):
+			self.forecast = Forecast(freq=self.periods[0].freq_output,**scenario_forecast.reset_index().to_dict(orient='list'))
+		else:
+			self.forecast = Forecast(freq=self.periods[0].freq_output,**scenario_forecast.to_timestamp().reset_index().to_dict(orient='list'))
+
 		return scenario_forecast
 
 	def generate_cashflow(self,periods:list = None):
@@ -226,6 +217,8 @@ class Scenario(BaseModel):
 		cashflow_model = CashFlowModel(name=self.name)
 		list_periods_errors = []
 		for p in _periods:
+			if self.cashflow_params:
+				p.cashflow_params = self.cashflow_params
 
 			try:
 				_cf = p.generate_cashflow()
