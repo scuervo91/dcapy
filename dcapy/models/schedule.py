@@ -33,8 +33,10 @@ class Period(BaseModel):
 	freq_output: Literal['M','D','A'] = Field('M')
 	rate_limit: Optional[float] = Field(None, ge=0)
 	cum_limit: Optional[float] = Field(None, ge=0)
+	iter : int = Field(1, ge=1)
+	ppf : Optional[float] = Field(None, ge=0, le=1)
 	cashflow_params : Optional[CashFlowInput] = Field(None)
-	cashflow : Optional[CashFlowModel] = Field(None)
+	cashflow : Optional[List[CashFlowModel]] = Field(None)
 	depends: Optional[str] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
 
@@ -58,7 +60,7 @@ class Period(BaseModel):
 		_forecast = self.dca.forecast(
 			time_list = self.time_list,start=self.start, end=self.end, freq_input=self.freq_input, 
 			freq_output=self.freq_output, rate_limit=self.rate_limit, 
-   			cum_limit=self.cum_limit
+   			cum_limit=self.cum_limit, iter=self.iter, ppf=self.ppf
 		)
 		_forecast['period'] = self.name
 
@@ -76,86 +78,93 @@ class Period(BaseModel):
 
 			is_date_mode = self.date_mode()
 			#Format date
-			cashflow_model_dict = {'name':self.name}
-			for param in self.cashflow_params.params_list:
-				#initialize the individual cashflow dict
 
-				if param.target not in cashflow_model_dict.keys():
-					cashflow_model_dict[param.target] = []
+			list_cashflow_model = []
 
-				cashflow_dict = {}
+			#Iterate over list of cases
+			for i in _forecast['iteration'].unique():
 
-				#set the name
-				cashflow_dict.update({
-					'name':param.name,
-					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
-					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
-					'freq':self.freq_output
-				})
+				_forecast_i = _forecast[_forecast['iteration']==i]
 
+				cashflow_model_dict = {'name':self.name + '_' + str(i)}
+				for param in self.cashflow_params.params_list:
+					#initialize the individual cashflow dict
 
-				if param.multiply:
-					#Forecast Column name to multiply the param
+					if param.target not in cashflow_model_dict.keys():
+						cashflow_model_dict[param.target] = []
 
-					#Check if the column exist in the forecast pandas dataframe
-					if param.multiply in _forecast.columns:
-						multiply_col = param.multiply
-					else:
-						print(f'{param.multiply} is not in forecast columns. {_forecast.columns}')
-						continue
+					cashflow_dict = {}
+
+					#set the name
+					cashflow_dict.update({
+						'name':param.name,
+						'start':_forecast_i.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.min(),
+						'end':_forecast_i.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.max(),
+						'freq':self.freq_output
+					})
 
 
-					if param.const_value:
-						_const_value = _forecast[multiply_col].multiply(param.const_value).multiply(param.wi)
-						cashflow_dict.update({'const_value':_const_value.tolist()})
+					if param.multiply:
+						#Forecast Column name to multiply the param
 
-					if param.array_values:
-
-						#If the array values date is a datetime.date convert to output frecuency
-						#to be consistent with the freq of the forecast when multiply
-						idx = pd.to_datetime(param.array_values.date).to_period(self.freq_output) if is_date_mode  else param.array_values.date
-						values_series = pd.Series(param.array_values.value, index=idx)
-
-						_array_values = _forecast[multiply_col].multiply(values_series).multiply(param.wi).dropna()
-
-						if _array_values.empty:
-							print(f'param {param.name} array values not multiplied with forecast. There is no index match')
+						#Check if the column exist in the forecast pandas dataframe
+						if param.multiply in _forecast_i.columns:
+							multiply_col = param.multiply
 						else:
+							print(f'{param.multiply} is not in forecast columns. {_forecast_i.columns}')
+							continue
+
+
+						if param.const_value:
+							_const_value = _forecast_i[multiply_col].multiply(param.const_value).multiply(param.wi)
+							cashflow_dict.update({'const_value':_const_value.tolist()})
+
+						if param.array_values:
+
+							#If the array values date is a datetime.date convert to output frecuency
+							#to be consistent with the freq of the forecast when multiply
+							idx = pd.to_datetime(param.array_values.date).to_period(self.freq_output) if is_date_mode  else param.array_values.date
+							values_series = pd.Series(param.array_values.value, index=idx)
+
+							_array_values = _forecast_i[multiply_col].multiply(values_series).multiply(param.wi).dropna()
+
+							if _array_values.empty:
+								print(f'param {param.name} array values not multiplied with forecast. There is no index match')
+							else:
+								cashflow_dict.update({
+									'chgpts':{
+										'date':_array_values.index.strftime('%Y-%m-%d').tolist(),
+										'value':_array_values.tolist()
+									}
+								})
+
+					else:
+						if param.const_value:
 							cashflow_dict.update({
-								'chgpts':{
-									'date':_array_values.index.strftime('%Y-%m-%d').tolist(),
-									'value':_array_values.tolist()
-								}
+								'const_value':param.const_value * param.wi
+							})
+						if param.array_values:
+							cashflow_dict.update({
+								'chgpts': ChgPts(date = param.array_values.date, value = param.array_values.value*param.wi)
 							})
 
-				else:
-					if param.const_value:
-						cashflow_dict.update({
-							'const_value':param.const_value * param.wi,
-						})
-					if param.array_values:
-						cashflow_dict.update({
-							'chgpts': ChgPts(date = param.array_values.date, value = param.array_values.value*param.wi)
-						})
+
+					cashflow_model_dict[param.target].append(cashflow_dict)
+
+				#Check all keys are not empty. Otherwise delete them
+
+				for key in cashflow_model_dict:
+					if len(cashflow_model_dict[key]) == 0:
+						del cashflow_model_dict[key]
 
 
 
+				cashflow_model = CashFlowModel(**cashflow_model_dict)
+				list_cashflow_model.append(cashflow_model)
 
+			self.cashflow = list_cashflow_model
 
-				cashflow_model_dict[param.target].append(cashflow_dict)
-
-			#Check all keys are not empty. Otherwise delete them
-
-			for key in cashflow_model_dict:
-				if len(cashflow_model_dict[key]) == 0:
-					del cashflow_model_dict[key]
-
-
-
-			cashflow_model = CashFlowModel(**cashflow_model_dict)
-			self.cashflow = cashflow_model
-
-			return cashflow_model
+			return list_cashflow_model
 		else:
 			raise ValueError('Either Forecast or Cashflow Params not defined')
 	
@@ -164,7 +173,7 @@ class Scenario(BaseModel):
 	name : str
 	periods: List[Period]
 	cashflow_params : Optional[CashFlowInput] = Field(None)
-	cashflow : Optional[CashFlowModel] = Field(None)
+	cashflow : Optional[List[CashFlowModel]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
 	class Config:
 		arbitrary_types_allowed = True
@@ -205,6 +214,20 @@ class Scenario(BaseModel):
 
 		return scenario_forecast
 
+	def _iterations(self,periods:list = None):
+		#Make filter
+		if periods:
+			_periods = [i for i in self.periods if i.name in periods]
+		else:
+			_periods = self.periods
+
+		n = []
+		for i in _periods:
+			n.append(np.array(i.forecast.iteration).max())
+
+		return np.array(n).max() + 1
+
+
 	def generate_cashflow(self,periods:list = None):
 
 		#Make filter
@@ -213,8 +236,10 @@ class Scenario(BaseModel):
 		else:
 			_periods = self.periods
 
+		n = self._iterations(periods = periods)
+		#print(n)
 
-		cashflow_model = CashFlowModel(name=self.name)
+		cashflow_models = [CashFlowModel(name=self.name) for i in range(n)]
 		list_periods_errors = []
 		for p in _periods:
 			if self.cashflow_params:
@@ -226,11 +251,15 @@ class Scenario(BaseModel):
 				print(e)
 				list_periods_errors.append(p.name)
 			else:
-				cashflow_model.append(_cf)
+				if len(_cf)==1:
+					_cf = [_cf[0] for i in range(n)]
 
-		self.cashflow = cashflow_model
+				for i in range(n):
+					cashflow_models[i].append(_cf[i])
 
-		return cashflow_model
+		self.cashflow = cashflow_models
+
+		return cashflow_models
 
  
 class Schedule(BaseModel):
