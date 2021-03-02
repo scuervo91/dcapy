@@ -260,15 +260,3 @@ class Scenario(BaseModel):
 		self.cashflow = cashflow_models
 
 		return cashflow_models
-
- 
-class Schedule(BaseModel):
-	name : str
-	scenarios : List[Scenario]
-	cashflows : Optional[List[CashFlowModel]]
-	class Config:
-		arbitrary_types_allowed = True
-		validate_assignment = True 
-
-
-

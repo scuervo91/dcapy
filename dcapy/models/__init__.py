@@ -1,2 +1,2 @@
-from .schedule import Period, Schedule, Scenario, Forecast
+from .schedule import Period, Scenario, Forecast
 from .cashflow import CashFlow, ChgPts, CashFlowModel, CashFlowInput, CashFlowParams
