@@ -1,14 +1,14 @@
-po[tool.poetry]
+[tool.poetry]
 name = "dcapy"
 version = "0.1.0"
-description = "Oil&Gas Forecast Scheduling Production Workflow"
+description = "DCA Forecast Workflows"
 authors = ["Santiago Cuervo"]
 license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.8"
 numpy = "^1.20.1"
-pandas = "^1.2.2"
+pandas = "^1.2.3"
 matplotlib = "^3.3.4"
 seaborn = "^0.11.1"
 scipy = "^1.6.1"
