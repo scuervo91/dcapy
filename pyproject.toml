@@ -1,4 +1,4 @@
-[tool.poetry]
+env[tool.poetry]
 name = "dcapy"
 version = "0.1.0"
 description = "DCA Forecast Workflows"
