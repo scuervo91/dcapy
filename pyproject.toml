@@ -1,7 +1,7 @@
-env[tool.poetry]
+[tool.poetry]
 name = "dcapy"
 version = "0.1.0"
-description = "DCA Forecast Workflows"
+description = "Oil and Gas DCA Workflows"
 authors = ["Santiago Cuervo"]
 license = "MIT"
 
@@ -12,11 +12,11 @@ pandas = "^1.2.3"
 matplotlib = "^3.3.4"
 seaborn = "^0.11.1"
 scipy = "^1.6.1"
-pydantic = "^1.8"
+pydantic = "^1.8.1"
 
 [tool.poetry.dev-dependencies]
-ipykernel = "^5.5.0"
 notebook = "^6.2.0"
+ipykernel = "^5.5.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

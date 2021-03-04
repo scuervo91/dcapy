@@ -11,7 +11,7 @@ import seaborn as sns
 from pydantic import BaseModel, Field
 from typing import Union, List, Optional
 #Local Imports
-from .dca import DCA 
+from .dca import DCA, ProbVar
 from .timeconverter import list_freq, converter_factor, time_converter_matrix, check_value_or_prob, FreqEnum
 from ..filters import zscore
 
@@ -301,9 +301,9 @@ class Arps(BaseModel,DCA):
     rate_time
         Estimate the time at which the Arps instance would reach the defined rate
     """
-    qi: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
-    di: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
-    b: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
+    qi: Union[ProbVar,List[float],float] = Field(...)
+    di: Union[ProbVar,List[float],float] = Field(...)
+    b: Union[ProbVar,List[float],float] = Field(...)
     ti: Union[int,date] = Field(...)
     freq_di: FreqEnum = Field('M')
     seed : Optional[int] = Field(None)
@@ -351,41 +351,22 @@ class Arps(BaseModel,DCA):
     
             
     def get_qi(self,size=None, ppf=None):
-        if isinstance(self.qi,stats._distn_infrastructure.rv_frozen):
-            if size is None:
-                return self.qi.mean()
-            elif ppf is None:
-                return self.qi.rvs(size=size,random_state=self.seed)
-            else:
-                return self.qi.ppf(ppf)
-
+        if isinstance(self.qi,ProbVar):
+            return self.qi.get_sample(size=size, ppf=ppf)
         else:
             return np.atleast_1d(self.qi)
 
             
     def get_di(self,size=None, ppf=None):
-        if isinstance(self.di,stats._distn_infrastructure.rv_frozen):
-            if size is None:
-                return self.di.mean()
-            elif ppf is None:
-                return self.di.rvs(size=size,random_state=self.seed)
-            else:
-                return self.di.ppf(ppf)
-
+        if isinstance(self.di,ProbVar):
+            return self.di.get_sample(size=size, ppf=ppf)
         else:
             return np.atleast_1d(self.di)
             
 
-
     def get_b(self,size=None, ppf=None):
-        if isinstance(self.b,stats._distn_infrastructure.rv_frozen):
-            if size is None:
-                return self.b.mean()
-            elif ppf is None:
-                return self.b.rvs(size=size,random_state=self.seed)
-            else:
-                return self.b.ppf(ppf)
-
+        if isinstance(self.b,ProbVar):
+            return self.b.get_sample(size=size, ppf=ppf)
         else:
             return np.atleast_1d(self.b)
         
