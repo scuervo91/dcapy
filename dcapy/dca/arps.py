@@ -301,10 +301,10 @@ class Arps(BaseModel,DCA):
     rate_time
         Estimate the time at which the Arps instance would reach the defined rate
     """
-    qi: Union[ProbVar,List[float],float] = Field(...)
-    di: Union[ProbVar,List[float],float] = Field(...)
-    b: Union[ProbVar,List[float],float] = Field(...)
-    ti: Union[int,date] = Field(...)
+    qi: Union[ProbVar,List[float],float] = Field(None)
+    di: Union[ProbVar,List[float],float] = Field(None)
+    b: Union[ProbVar,List[float],float] = Field(None)
+    ti: Union[int,date] = Field(None)
     freq_di: FreqEnum = Field('M')
     seed : Optional[int] = Field(None)
     fluid_rate: Optional[Union[float,List[float]]] = Field(None)
@@ -315,6 +315,7 @@ class Arps(BaseModel,DCA):
 
     class Config:
         arbitrary_types_allowed = True
+        validate_assignment = True
 
     #def __init__(self,qi:float=None, di:float=None, b:float=None, ti:Union[float,date]=None,freq_di:str='M', seed:int=None):
     """__init__ Initiate instance of Arps Decline Curve Type
@@ -578,7 +579,7 @@ class Arps(BaseModel,DCA):
         return _forecast_df.dropna()
     
     def fit(self,df:pd.DataFrame=None,time:Union[str,np.ndarray,pd.Series]=None,
-            rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={}):
+            rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={},prob=False):
         """fit Fit a production time series to a parameterized Arps Ecuation. Optionally,
         a anomaly detection filter can be passed. It returns an Arps Instance with the fitted
         attributes.
@@ -626,12 +627,11 @@ class Arps(BaseModel,DCA):
         if b is None:
             def cost_function(_x,_qi,_di,_b):
                 return arps_forecast(_x,_qi,_di,_b)
-            try:
-                vtoordinal = np.vectorize(datetime.toordinal)
-                _x = vtoordinal(x)
-            except Exception as e:
-                print(e)
+            if isinstance(x[0],np.datetime64):
+                _x = np.array([pd.Timestamp(i).toordinal() for i in x])
+            else:
                 _x = x.astype(float)
+
 
             #Apply the Filters
             x_filter = _x[total_filter==0]-_x[total_filter==0][0]
@@ -639,21 +639,19 @@ class Arps(BaseModel,DCA):
             
             #Optimization process
             popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=(0.0, [np.inf, np.inf, 1]))
-            
             #Assign the results to the Class
-            self.qi = popt[0]
-            self.di = popt[1]
-            self.b = popt[2]
-            self.ti = x[total_filter==0][0]
+            self.qi = {'dist':'norm','kw':{'loc':popt[0],'scale':np.sqrt(np.diag(pcov)[0])}} if prob else popt[0] 
+            self.di = {'dist':'norm','kw':{'loc':popt[1],'scale':np.sqrt(np.diag(pcov)[1])}} if prob else popt[1]
+            self.b = {'dist':'norm','kw':{'loc':popt[2],'scale':np.sqrt(np.diag(pcov)[2])}} if prob else popt[2]
+            self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],np.datetime64) else x[total_filter==0][0]
         else:
             def cost_function(x,qi,di):
                 return arps_forecast(x,qi,di,b)
-            try:
-                vtoordinal = np.vectorize(datetime.toordinal)
-                _x = vtoordinal(x)
-            except Exception as e:
-                print(e)
+            if isinstance(x[0],np.datetime64):
+                _x = np.array([pd.Timestamp(i).toordinal() for i in x])
+            else:
                 _x = x.astype(float)
+
              
             #Apply the Filters   
             x_filter = _x[total_filter==0]-_x[total_filter==0][0]
@@ -662,9 +660,9 @@ class Arps(BaseModel,DCA):
             #Optimization process
             popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=(0.0, [np.inf, np.inf]))
    
-            self.qi = popt[0]
-            self.di = popt[1]
-            self.ti = x[total_filter==0][0]
+            self.qi = {'dist':'norm','kw':{'loc':popt[0],'scale':np.sqrt(np.diag(pcov)[0])}} if prob else popt[0] 
+            self.di = {'dist':'norm','kw':{'loc':popt[1],'scale':np.sqrt(np.diag(pcov)[1])}} if prob else popt[1]
+            self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],np.datetime64) else x[total_filter==0][0]
             self.b = b
             
         return pd.DataFrame({'time':x,'oil_rate':y,'filter':total_filter})
