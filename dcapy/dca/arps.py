@@ -627,7 +627,7 @@ class Arps(BaseModel,DCA):
         if b is None:
             def cost_function(_x,_qi,_di,_b):
                 return arps_forecast(_x,_qi,_di,_b)
-            if isinstance(x[0],np.datetime64):
+            if isinstance(x[0],(np.datetime64,date)):
                 _x = np.array([pd.Timestamp(i).toordinal() for i in x])
             else:
                 _x = x.astype(float)
@@ -643,11 +643,11 @@ class Arps(BaseModel,DCA):
             self.qi = {'dist':'norm','kw':{'loc':popt[0],'scale':np.sqrt(np.diag(pcov)[0])}} if prob else popt[0] 
             self.di = {'dist':'norm','kw':{'loc':popt[1],'scale':np.sqrt(np.diag(pcov)[1])}} if prob else popt[1]
             self.b = {'dist':'norm','kw':{'loc':popt[2],'scale':np.sqrt(np.diag(pcov)[2])}} if prob else popt[2]
-            self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],np.datetime64) else x[total_filter==0][0]
+            self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],(np.datetime64,date)) else x[total_filter==0][0]
         else:
             def cost_function(x,qi,di):
                 return arps_forecast(x,qi,di,b)
-            if isinstance(x[0],np.datetime64):
+            if isinstance(x[0],(np.datetime64,date)):
                 _x = np.array([pd.Timestamp(i).toordinal() for i in x])
             else:
                 _x = x.astype(float)
@@ -662,7 +662,7 @@ class Arps(BaseModel,DCA):
    
             self.qi = {'dist':'norm','kw':{'loc':popt[0],'scale':np.sqrt(np.diag(pcov)[0])}} if prob else popt[0] 
             self.di = {'dist':'norm','kw':{'loc':popt[1],'scale':np.sqrt(np.diag(pcov)[1])}} if prob else popt[1]
-            self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],np.datetime64) else x[total_filter==0][0]
+            self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],(np.datetime64,date)) else x[total_filter==0][0]
             self.b = b
             
         return pd.DataFrame({'time':x,'oil_rate':y,'filter':total_filter})
