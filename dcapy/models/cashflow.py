@@ -3,6 +3,7 @@ from typing import Union, List, Optional, Literal
 from datetime import date
 import pandas as pd
 import numpy as np
+import numpy_financial as npf
 
 freq_format={
     'M':'%Y-%m',
@@ -182,6 +183,26 @@ class CashFlowModel(BaseModel):
         fcf_df['cum_fcf'] = fcf_df['fcf'].cumsum()
 
         return fcf_df
+
+    def irr(self,freq_output=None):
+
+        fcf = self.fcf(freq_output=freq_output)
+
+        irr = npf.irr(fcf['fcf'].values)
+
+        return irr
+
+    def npv(self, rates, freq_output=None):
+
+        rates = np.atleast_1d(rates)
+        fcf = self.fcf(freq_output=freq_output)
+
+        npv_dict = {}
+        for i in rates:
+            npv_dict[i] = npf.npv(i,fcf['fcf'].values)
+
+        return npv_dict
+
 
 
 
