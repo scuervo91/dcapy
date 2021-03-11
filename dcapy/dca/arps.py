@@ -161,12 +161,13 @@ def arps_forecast(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],
         else:
             try:
                 # TODO Review atleast2D
-               params_dict[i] = np.atleast_1d(params_dict[i]).reshape(-1,1)
+               params_dict[i] = np.atleast_2d(params_dict[i]).reshape(-1,1)
             except Exception as e:
                 print(e)
                 raise
     
-    time_diff = np.atleast_1d(time_array) - ti
+    time_diff = np.atleast_1d(time_array).astype(float) - params_dict['ti']
+    time_diff[time_diff<0] = np.nan
     
     f = np.where(
         params_dict['b']==0,
@@ -227,7 +228,7 @@ def arps_cumulative(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float
                 print(e)
                 raise
     
-    time_diff = np.atleast_1d(time_array) - ti
+    time_diff = np.atleast_1d(time_array).astype(float) - params_dict['ti']
        
     f = np.where(
         params_dict['b']==0,
@@ -304,7 +305,7 @@ class Arps(BaseModel,DCA):
     qi: Union[ProbVar,List[float],float] = Field(None)
     di: Union[ProbVar,List[float],float] = Field(None)
     b: Union[ProbVar,List[float],float] = Field(None)
-    ti: Union[int,date] = Field(None)
+    ti: Union[int,date,List[int],List[date]] = Field(None)
     freq_di: FreqEnum = Field('M')
     seed : Optional[int] = Field(None)
     fluid_rate: Optional[Union[float,List[float]]] = Field(None)
@@ -382,8 +383,13 @@ class Arps(BaseModel,DCA):
     def format(self):
         if isinstance(self.ti,date):
             return 'date'
-        else:
+        elif isinstance(self.ti,int):
             return 'number'
+        elif isinstance(self.ti,list):
+            if isinstance(self.ti[0],date):
+                return 'date'
+            else:
+                return 'number'
                 
     def __repr__(self):
         return 'Declination \n Ti: {self.ti} \n Qi: {self.qi} bbl/d \n Di: {self.di} {self.freq_di} \n b: {self.b}'.format(self=self)
@@ -469,8 +475,11 @@ class Arps(BaseModel,DCA):
                 assert all(isinstance(i,date) for i in [start,end])
                 time_list = pd.period_range(start=start, end=end, freq=freq_output)
 
+            ti_array = np.array([i.toordinal() for i in np.atleast_1d(self.ti)], dtype=int)
+            ti_delta = ti_array - ti_array[0]
+
             time_range = pd.Series(time_list)
-            time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()) - self.ti.toordinal()
+            time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()) - ti_array.min()
             time_array = time_array.values
             di_factor = converter_factor(self.freq_di,'D')
         else:
@@ -484,6 +493,7 @@ class Arps(BaseModel,DCA):
                 assert fq>=1, 'The output frecuency must be greater than input'
                 time_list = np.arange(start, end, int(fq))
 
+            ti_delta = 0
             time_array = time_list
             time_range = time_list
             di_factor = converter_factor(self.freq_di,freq_input)
@@ -508,7 +518,7 @@ class Arps(BaseModel,DCA):
                 time_array[time_index] = np.nan
                 
         cum_factor = converter_factor('D',freq_input) if self.format() == 'number' else 1
-        _forecast = arps_forecast(time_array,qi,di,b).flatten('F')
+        _forecast = arps_forecast(time_array,qi,di,b,ti=ti_delta).flatten('F')
         _cumulative = arps_cumulative(time_array,qi*cum_factor,di,b).flatten('F')
         _iterations = np.repeat(np.arange(0,iter),_forecast.shape[0]/iter) #if n is not None else np.zeros(_forecast.shape)
         _forecast_df = pd.DataFrame(
