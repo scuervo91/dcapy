@@ -509,11 +509,11 @@ class Arps(BaseModel,DCA):
             time_limit = self.rate_time(qi,di,b,rate_limit)
             
             if iter==1:
-                time_index = time_array>time_limit
+                time_index = time_array<time_limit
                 time_array = time_array[time_index]
                 time_range = time_range[time_index]
             else:
-                time_index = time_array>=time_limit.reshape(-1,1)
+                time_index = time_array<=time_limit.reshape(-1,1)
                 time_array = np.tile(time_array,(iter,1)).astype('float')
                 time_array[time_index] = np.nan
                 

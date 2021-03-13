@@ -1,5 +1,5 @@
 #External Imports
-from typing import Union, Optional, List, Literal
+from typing import Union, Optional, List, Literal, Dict
 from pydantic import BaseModel, Field, validator
 from datetime import date, timedelta
 import pandas as pd
@@ -21,7 +21,9 @@ freq_format={
     'A':'%Y'
 }
 
-   
+class Depends(BaseModel):
+    period : str = Field(...)
+    delay : timedelta = Field(None)
   
 class Period(BaseModel):
 	name : str
@@ -37,7 +39,7 @@ class Period(BaseModel):
 	ppf : Optional[float] = Field(None, ge=0, le=1)
 	cashflow_params : Optional[CashFlowInput] = Field(None)
 	cashflow : Optional[List[CashFlowModel]] = Field(None)
-	depends: Optional[str] = Field(None)
+	depends: Optional[Depends] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
 
 	@validator('end')
@@ -69,6 +71,13 @@ class Period(BaseModel):
 		else:
 			self.forecast = Forecast(freq=self.freq_output,**_forecast.to_timestamp().reset_index().to_dict(orient='list'))
 		return _forecast
+
+	def get_end_dates(self):
+		if self.forecast:
+			_df = self.forecast.df().reset_index()
+			dates_sr = _df.groupby('iteration')['date'].max()
+			return [i.to_timestamp().date() for i in dates_sr]
+		raise ValueError('There is no any Forecast')
 
 	def generate_cashflow(self):
 
@@ -185,21 +194,32 @@ class Scenario(BaseModel):
 
 		#Make filter
 		if periods:
-			_periods = [i for i in self.periods if i.name in periods]
+			_periods = {i.name:i for i in self.periods if i.name in periods}
 		else:
-			_periods = self.periods
+			_periods = {i.name:i for i in self.periods}
 
 
 		list_forecast = []
 		list_periods_errors = []
 
 		for p in _periods:
+			
+			if _periods[p].depends:
+				#Get the last dates of the forecast present period depends on
+				depend_period = _periods[p].depends.period
+				new_ti = _periods[depend_period].get_end_dates()
+    
+				# If delay is set. add the time delta
+				if _periods[p].depends.delay:
+					new_ti = [i + _periods[p].depends.delay for i in new_ti]
+
+				_periods[p].dca.ti = new_ti
 
 			try:
-				_f = p.generate_forecast()
+				_f = _periods[p].generate_forecast()
 			except Exception as e:
 				print(e)
-				list_periods_errors.append(p.name)
+				list_periods_errors.append(_periods[p].name)
 			else:
 				list_forecast.append(_f)
 
