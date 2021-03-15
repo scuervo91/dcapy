@@ -214,14 +214,15 @@ class Scenario(BaseModel):
 					new_ti = [i + _periods[p].depends.delay for i in new_ti]
 
 				_periods[p].dca.ti = new_ti
-
-			try:
-				_f = _periods[p].generate_forecast()
-			except Exception as e:
-				print(e)
-				list_periods_errors.append(_periods[p].name)
-			else:
-				list_forecast.append(_f)
+				print(new_ti)
+			_f = _periods[p].generate_forecast()
+			#try:
+			#	_f = _periods[p].generate_forecast()
+			#except Exception as e:
+			#	print(e)
+			#	list_periods_errors.append(_periods[p].name)
+			#else:
+			list_forecast.append(_f)
 
 
 		scenario_forecast = pd.concat(list_forecast, axis=0)

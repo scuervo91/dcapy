@@ -242,7 +242,7 @@ def arps_cumulative(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float
     return np.squeeze(f.T)
 
 def arps_rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
-                 b:Union[np.ndarray,float], rate:Union[int,float,np.ndarray])->int:
+                 b:Union[np.ndarray,float], rate:Union[int,float,np.ndarray],ti:Union[int,float,np.ndarray]=0)->int:
     """arps_rate_time Estimate the time at which the rate is reached given Arps parameters
 
     Parameters
@@ -266,12 +266,13 @@ def arps_rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
     qi = np.atleast_1d(qi)
     di = np.atleast_1d(di)
     b = np.atleast_1d(b)
+    ti = np.atleast_1d(ti)
 
     time_until = np.where(
         b==0,
         np.log(qi / rate) * (1/di),
         (np.power(qi / rate, b) - 1)/(b * di)
-    )
+    ) + ti
 
     #if b == 0:
     #    time_until = np.log(qi / rate) * (1/di)
@@ -399,7 +400,7 @@ class Arps(BaseModel,DCA):
                 
     @staticmethod
     def rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
-                 b:Union[np.ndarray,float], rate:Union[int,float,np.ndarray])->np.ndarray:
+                 b:Union[np.ndarray,float], rate:Union[int,float,np.ndarray],ti=None)->np.ndarray:
         """arps_rate_time Estimate the time at which the rate is reached given Arps parameters
 
         Parameters
@@ -421,7 +422,7 @@ class Arps(BaseModel,DCA):
             Time at which the rate limit is reached
         """    
 
-        return arps_rate_time(qi,di,b,rate)
+        return arps_rate_time(qi,di,b,rate, ti=ti)
     
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, end:Union[date,float]=None, rate_limit:float=None,
                  cum_limit:float=None, freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None, **kwargs)->pd.DataFrame:
@@ -493,7 +494,7 @@ class Arps(BaseModel,DCA):
                 assert fq>=1, 'The output frecuency must be greater than input'
                 time_list = np.arange(start, end, int(fq))
 
-            ti_delta = 0
+            ti_delta = np.zeros(1)
             time_array = time_list
             time_range = time_list
             di_factor = converter_factor(self.freq_di,freq_input)
@@ -503,11 +504,11 @@ class Arps(BaseModel,DCA):
         di = self.get_di(size=iter, ppf=ppf)*di_factor
         b = self.get_b(size=iter, ppf=ppf)
         
-        iter = np.array([i.shape[0] for i in [qi,di,b]]).max()
-                    
+        
+        iter = np.array([i.shape[0] for i in [qi,di,b,ti_delta]]).max()
+
         if rate_limit is not None:
-            time_limit = self.rate_time(qi,di,b,rate_limit)
-            
+            time_limit = self.rate_time(qi,di,b,rate_limit, ti=ti_delta)
             if iter==1:
                 time_index = time_array<time_limit
                 time_array = time_array[time_index]
@@ -515,11 +516,11 @@ class Arps(BaseModel,DCA):
             else:
                 time_index = time_array<=time_limit.reshape(-1,1)
                 time_array = np.tile(time_array,(iter,1)).astype('float')
-                time_array[time_index] = np.nan
+                time_array[~time_index] = np.nan
                 
         cum_factor = converter_factor('D',freq_input) if self.format() == 'number' else 1
         _forecast = arps_forecast(time_array,qi,di,b,ti=ti_delta).flatten('F')
-        _cumulative = arps_cumulative(time_array,qi*cum_factor,di,b).flatten('F')
+        _cumulative = arps_cumulative(time_array,qi*cum_factor,di,b,ti=ti_delta).flatten('F')
         _iterations = np.repeat(np.arange(0,iter),_forecast.shape[0]/iter) #if n is not None else np.zeros(_forecast.shape)
         _forecast_df = pd.DataFrame(
             {
