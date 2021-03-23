@@ -1,17 +1,12 @@
-# Welcome to Dcapy
+# Dcapy
 
-For full documentation visit [mkdocs.org](https://www.mkdocs.org).
+Dcapy is a Decline Curve Analysis Python package for Oil & Gas that includes the classes and functions to perform a simple production forecast as well as complete probabilistic Well Schedules with cash flow analysis.  
 
-## Commands
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+The key features are:
 
-## Project layout
-
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
++ **Simple**: Arps and Wor forecast methodologies implemented
++ **Shedule**: Create multiple forecast periods *periods* for a single well that represent major interventions, new perforations, etc 
++ **Cash Flow**: Add cashflow parameters (Income, opex, capex) to perform a cashflow analysis 
++ **Deterministic/Probabilistic**: Add probabilistic variables to add a risk analysis to both simple forecast and schedules.
++ **Data Validation**: Dcapy uses Pydantic to make data validations when creating new instances

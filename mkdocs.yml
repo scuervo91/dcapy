@@ -5,11 +5,25 @@ theme:
     scheme: preference
     primary: white
     accent: deep purple
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+  icon:
+    repo: fontawesome/brands/github
+
 nav:
   - Home: index.md
   - Code Reference:
     - dca: dca-reference.md
+  - Tutorial:
+    - Intro: tutorial/1-Intro.md
+
+repo_url: https://github.com/orkahub/dcapy
+repo_name: orkahub/dcapy
 
 plugins:
   - search
   - mkdocstrings
+
