@@ -16,21 +16,15 @@ from .timeconverter import list_freq, converter_factor, time_converter_matrix, c
 from ..filters import zscore
 
 def arps_exp_rate(time_array:np.ndarray,qi:float,di:float)->np.ndarray:
-    """arps_exp Calculate the rate of Exponential, b=0, Arps Declination
+    """arps_exp_rate Calculate the rate of Exponential, b=0, Arps Declination
 
-    Parameters
-    ----------
-    qi : float
-        Initial rate
-    di : float
-        Initial Declination
-    time_array : np.ndarray
-        Array of numbers that represents the periods of timeto calculate rate
+    Args:
+        time_array (np.ndarray): Initial Rate
+        qi (float): Initial Flow
+        di (float): Nominal Declination rate 
 
-    Returns
-    -------
-    np.ndarray
-        Array of the rates calculated for the time_array
+    Returns:
+        np.ndarray: Array of the rates calculated for the time_array
     """
     time_array = np.atleast_1d(time_array)
     return qi*np.exp(-di*time_array)
