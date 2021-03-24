@@ -10,6 +10,8 @@ theme:
     - navigation.tabs
     - navigation.sections
     - navigation.expand
+    - search.suggest
+    - search.highlight
   icon:
     repo: fontawesome/brands/github
 

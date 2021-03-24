@@ -279,41 +279,20 @@ class Arps(BaseModel,DCA):
         arbitrary_types_allowed = True
         validate_assignment = True
 
-    #def __init__(self,qi:float=None, di:float=None, b:float=None, ti:Union[float,date]=None,freq_di:str='M', seed:int=None):
-    """__init__ Initiate instance of Arps Decline Curve Type
-
-    Parameters
-    ----------
-    qi : float
-        Initial Rate
-    di : float
-        Decline Rate
-    b : float
-        Arps Constant b
-    ti : Union[float,date]
-        Date of the Initial Rate 'qi'
-    freq_di : str
-        Frequency at with is reported the decline rate
-    seed : int
-        Seed for the random number generator
-
-    Returns
-    -------
-    Arps
-        Return an instance of Arps class
-    """
-        #self.qi = qi 
-        #self.di = di 
-        #self.b = b
-        #self.ti = ti 
-        #self.freq_di = freq_di
-        #self.seed = seed
-
     #####################################################
     ############## Properties ###########################
     
             
     def get_qi(self,size=None, ppf=None):
+        """get_qi get the number of qi
+
+        Args:
+            size ([type], optional): number of iterations. Defaults to None.
+            ppf ([type], optional): percentil. Defaults to None.
+
+        Returns:
+            np.array: Array if qi
+        """
         if isinstance(self.qi,ProbVar):
             return self.qi.get_sample(size=size, ppf=ppf)
         else:
@@ -321,6 +300,15 @@ class Arps(BaseModel,DCA):
 
             
     def get_di(self,size=None, ppf=None):
+        """get_di get the number of qi
+
+        Args:
+            size ([type], optional): number of iterations. Defaults to None.
+            ppf ([type], optional): percentil. Defaults to None.
+
+        Returns:
+            np.array: Array if di
+        """
         if isinstance(self.di,ProbVar):
             return self.di.get_sample(size=size, ppf=ppf)
         else:
@@ -328,20 +316,39 @@ class Arps(BaseModel,DCA):
             
 
     def get_b(self,size=None, ppf=None):
+        """get_b get the number of qi
+
+        Args:
+            size ([type], optional): number of iterations. Defaults to None.
+            ppf ([type], optional): percentil. Defaults to None.
+
+        Returns:
+            np.array: Array if b
+        """
         if isinstance(self.b,ProbVar):
             return self.b.get_sample(size=size, ppf=ppf)
         else:
             return np.atleast_1d(self.b)
         
 
-    def ti_n(self):
+    def ti_n(self)->int:
+        """ti_n return integer of time the instance is initilized
+
+        Returns:
+            int: number 
+        """
         if self.format() == 'number':
             return self.ti
         else:
             return self.ti.toordinal()
 
 
-    def format(self):
+    def format(self)->str:
+        """format return the time format the instance is initialized
+
+        Returns:
+            str: number or date
+        """
         if isinstance(self.ti,date):
             return 'date'
         elif isinstance(self.ti,int):
@@ -357,69 +364,42 @@ class Arps(BaseModel,DCA):
 
     def __str__(self):
         return 'Declination \n Ti: {self.ti} \n Qi: {self.qi} bbl/d \n Di: {self.di} {self.freq_di} \n b: {self.b}'.format(self=self)
-                
+     
     @staticmethod
     def rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
                  b:Union[np.ndarray,float], rate:Union[int,float,np.ndarray],ti=None)->np.ndarray:
-        """arps_rate_time Estimate the time at which the rate is reached given Arps parameters
+        """rate_time arps_rate_time Estimate the time at which the rate is reached given Arps parameters
 
-        Parameters
-        ----------
-        qi : float
-            Initial Rate at ti
-        di : float
-            Decline rate
-        b : float
-            description
-        rate : float
-            Rate limit at which the forecast must be stop
-        ti : float, optional
-            Time of the initial rate qi, by default 0.0
+        Args:
+            qi (Union[np.ndarray,float]): Initial qi
+            di (Union[np.ndarray,float]): Nominal Declination rate
+            b (Union[np.ndarray,float]): Arps coefficient
+            rate (Union[int,float,np.ndarray]): rate to estimate de time
+            ti ([type], optional): initial ti. Defaults to None.
 
-        Returns
-        -------
-        np.ndarray
-            Time at which the rate limit is reached
-        """    
+        Returns:
+            np.ndarray: array of retes limit
+        """
 
         return arps_rate_time(qi,di,b,rate, ti=ti)
     
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, end:Union[date,float]=None, rate_limit:float=None,
                  cum_limit:float=None, freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None, **kwargs)->pd.DataFrame:
-        """forecast Estimate the forecast given the Arps parameters, dates and limits.
+        """forecast [summary]
 
-        Parameters
-        ----------
-        time_list: Union[float,date], optional
-            A numpy array or pandas Series with dtype datetime64 when format date
-            is used else with dtype float for days numbers. It is used for custom time, by default None
-        start :Union[float,date], optional
-            The first date at which the DataFrame will start. If not specified,
-            the Arps.ti parameter is used, by default None
-        end : Union[float,date], optional
-            The maximum date at which the DataFrame will end. if the resulting date
-            at which either rate_limit or cum_limit reach the rate limit is beyond end_date,
-            the last date will be end_date, otherwise the date estimated, by default None
-        rate_limit : float, optional
-            Rate at which the forecast will stop, by default None
-        cum_limit : float, optional
-            Cumulative volume at which the forecast will stop, by default None
-        freq_input : str, optional
-            Frequency at which the estimations will be performed. 
-            By default the forecast is estimated on daily basis. , by default 'D'
-        freq_output : str, optional
-            Frequency at which the forecast will be returned. 
-            by default the frequency will be on monthly basis, by default 'M'
-        iter: int, optional
-            Number of samples to be simulated using Montecarlo simulation
-        ppf: float, optional
-            Percentil number to be generated instead if random numbers when a probability
-            distribution is set
+        Args:
+            time_list (Union[pd.Series,np.ndarray], optional): [description]. Defaults to None.
+            start (Union[date,float], optional): [description]. Defaults to None.
+            end (Union[date,float], optional): [description]. Defaults to None.
+            rate_limit (float, optional): [description]. Defaults to None.
+            cum_limit (float, optional): [description]. Defaults to None.
+            freq_input (str, optional): [description]. Defaults to 'D'.
+            freq_output (str, optional): [description]. Defaults to 'M'.
+            iter (int, optional): [description]. Defaults to 1.
+            ppf ([type], optional): [description]. Defaults to None.
 
-        Returns
-        -------
-        pd.DataFrame
-            Result DataFrame indexed by DateTime array
+        Returns:
+            pd.DataFrame: [description]
         """
         
         #If the Instance format is date perform operations to convert
@@ -548,30 +528,24 @@ class Arps(BaseModel,DCA):
                 _forecast_df.loc[_forecast_df['iteration']==i,'gas_volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'gas_cum'].values,prepend=0)
 
         return _forecast_df.dropna()
-    
+
     def fit(self,df:pd.DataFrame=None,time:Union[str,np.ndarray,pd.Series]=None,
             rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={},prob=False):
-        """fit Fit a production time series to a parameterized Arps Ecuation. Optionally,
+        """fit a production time series to a parameterized Arps Ecuation. Optionally,
         a anomaly detection filter can be passed. It returns an Arps Instance with the fitted
         attributes.
 
-        Parameters
-        ----------
-        df : pd.DataFrame, optional
-            pandas DataFrame with the information to be fitted , by default None
-        time : Union[str,np.ndarray,pd.Series], optional
-            Column name of the df DataFrame or array with the time information, by default None
-        rate : Union[str,np.ndarray,pd.Series], optional
-            Column name of the df DataFrame or array with the rate information, by default None
-        b : float, optional
-            b Arps coefficient. If None it becomes an additional parameter to fit, by default None
-        filter : str, optional
-            [description], by default None
+        Args:
+            df (pd.DataFrame, optional): [description]. Defaults to None.
+            time (Union[str,np.ndarray,pd.Series], optional): [description]. Defaults to None.
+            rate (Union[str,np.ndarray,pd.Series], optional): [description]. Defaults to None.
+            b (float, optional): [description]. Defaults to None.
+            filter ([type], optional): [description]. Defaults to None.
+            kw_filter (dict, optional): [description]. Defaults to {}.
+            prob (bool, optional): [description]. Defaults to False.
 
-        Returns
-        -------
-        Arps
-            [description]
+        Returns:
+            [type]: [description]
         """
         # TODO: Add the option to start the cumulative with an Initial Value different a 0
         #Check inputs
@@ -638,48 +612,28 @@ class Arps(BaseModel,DCA):
             
         return pd.DataFrame({'time':x,'oil_rate':y,'filter':total_filter})
         
-        
     def plot(self, start:Union[float,date]=None, end:Union[float,date]=None,
              freq_input:str='D',freq_output:str='M',rate_limit:float=None,
              cum_limit:float=None,iter:int=1,ppf=None,ax=None,rate_kw:dict={},cum_kw:dict={},
              ad_kw:dict={},cum:bool=False,anomaly:float=False, **kwargs):
-        """plot. Make a Plot in a Matplotlib axis of the rate forecast. 
+        """plot plot. Make a Plot in a Matplotlib axis of the rate forecast. 
          Optionally plot the cumulative curve in a second vertical axis.
 
-        Parameters
-        ----------
-        start :Union[float,date], optional
-            The first date at which the DataFrame will start. If not specified,
-            the Arps.ti parameter is used, by default None
-        end : Union[float,date], optional
-            The maximum date at which the DataFrame will end. if the resulting date
-            at which either econ_limit or cum_limit reach the rate limit is beyond end_date,
-            the last date will be end_date, otherwise the date estimated, by default None
-        rate_limit : float, optional
-            Rate at which the forecast will stop, by default None
-        cum_limit : float, optional
-            Cumulative volume at which the forecast will stop, by default None
-        freq_input : str, optional
-            Frequency at which the estimations will be performed. 
-            By default the forecast is estimated on daily basis. , by default 'D'
-        freq_output : str, optional
-            Frequency at which the forecast will be returned. 
-            by default the frequency will be on monthly basis, by default 'M'
-        ax : [type], optional
-            Matplotlib axes. If None it creates a new axes
-        rate_kw : dict, optional
-            Dictionary with the Matplotlib properties of the rate curve.
-            For example to change the color, width, style.
-        cum_kw : dict, optional
-            Dictionary with the Matplotlib properties of the rate curve.
-            For example to change the color, width, style.
-        ad_kw : dict, optional
-            Dictionary with the Matplotlib properties of the rate curve.
-            For example to change the color, width, style.
-        cum : bool, optional
-            If True it plots the cumulative curve
-        anomaly : float, optional
-            If True it plots the anomaly curve
+        Args:
+            start (Union[float,date], optional): [description]. Defaults to None.
+            end (Union[float,date], optional): [description]. Defaults to None.
+            freq_input (str, optional): [description]. Defaults to 'D'.
+            freq_output (str, optional): [description]. Defaults to 'M'.
+            rate_limit (float, optional): [description]. Defaults to None.
+            cum_limit (float, optional): [description]. Defaults to None.
+            iter (int, optional): [description]. Defaults to 1.
+            ppf ([type], optional): [description]. Defaults to None.
+            ax ([type], optional): [description]. Defaults to None.
+            rate_kw (dict, optional): [description]. Defaults to {}.
+            cum_kw (dict, optional): [description]. Defaults to {}.
+            ad_kw (dict, optional): [description]. Defaults to {}.
+            cum (bool, optional): [description]. Defaults to False.
+            anomaly (float, optional): [description]. Defaults to False.
         """
         f = self.forecast(start=start, end=end, 
                             freq_input=freq_input,freq_output=freq_output,
@@ -725,10 +679,3 @@ class Arps(BaseModel,DCA):
         if cum:
             cumax=dax.twinx()
             cumax.plot(time_axis,f['oil_cum'],**cum_kw)  
-
-
-                
-        
-                
-        
-        
