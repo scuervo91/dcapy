@@ -30,73 +30,56 @@ def arps_exp_rate(time_array:np.ndarray,qi:float,di:float)->np.ndarray:
     return qi*np.exp(-di*time_array)
 
 def arps_exp_cumulative(time_array:np.ndarray,qi:float,di:float,ti=0)->np.ndarray:
-    """arps_exp Calculate the Cumulative of Exponential, b=0, Arps Declination
+    """arps_exp_cumulative Calculate the Cumulative of Exponential, b=0, Arps Declination
 
-    Parameters
-    ----------
-    qi : float
-        Initial rate
-    di : float
-        Initial Declination
-    time_array : np.ndarray
-        Array of numbers that represents the periods of timeto calculate rate
+    Args:
+        time_array (np.ndarray):  Array of numbers that represents the periods of timeto calculate rate
+        qi (float): Initial rate at time ti
+        di (float): Declination Rate
+        ti (int, optional): Initial time at which is referenced the initial rate qi . Defaults to 0.
 
-    Returns
-    -------
-    np.ndarray
-        Array of the Cumulative calculated for the time_array
+    Returns:
+        np.ndarray: Array of the Cumulative calculated for the time_array
     """
+    
+
     time_array = np.atleast_1d(time_array)
     return (qi/di)*(np.exp(-di*ti) - np.exp(-di*time_array))
 
-def arps_hyp_rate(time_array:np.ndarray,qi:float,di:float,b:float)->np.ndarray:
-    """arps_exp Calculate the rate of either Armonic or hyperbolic , b>0, Arps Declination
+def arps_hyp_rate(time_array:np.ndarray,qi:float,di:float,b:float,ti:float=0)->np.ndarray:
+    """arps_hyp_rate Calculate the rate of either Armonic or hyperbolic , b>0, Arps Declination
 
-    Parameters
-    ----------
-    qi : float
-        Initial rate
-    di : float
-        Initial Declination
-    b : float
-        Arps Coeficient
-    time_array : np.ndarray
-        Array of numbers that represents the periods of timeto calculate rate
+    Args:
+        time_array (np.ndarray): Array of numbers that represents the periods of timeto calculate rate
+        qi (float): Initial Rate
+        di (float): Declination Rate
+        b (float): Arps Coefficient
+        ti (float, optional): Initial time at which is referenced the initial rate qi. Defaults to 0.
 
-    Returns
-    -------
-    np.ndarray
-        Array of the rates calculated for the time_array
+    Returns:
+        np.ndarray: Array of the rates calculated for the time_array
     """
     time_array = np.atleast_1d(time_array)
     return qi/np.power(1+b*di*time_array,1/b)
 
 def arps_hyp_cumulative(time_array:np.ndarray,qi:float,di:float,b:float,ti=0)->np.ndarray:
-    """arps_exp Calculate the cumulative of hyperbolic , 0<b<1, Arps Declination
+    """arps_hyp_cumulative Calculate the cumulative of hyperbolic , 0<b<1, Arps Declination
 
-    Parameters
-    ----------
-    qi : float
-        Initial rate
-    di : float
-        Initial Declination
-    b : float
-        Arps Coeficient
-    time_array : np.ndarray
-        Array of numbers that represents the periods of timeto calculate rate
+    Args:
+        time_array (np.ndarray): Array of numbers that represents the periods of timeto calculate rate
+        qi (float): Initial Rate
+        di (float): Declination Rate
+        b (float): Arps coefficient
+        ti (int, optional): Initial time at which is referenced the initial rate qi. Defaults to 0.
 
-    Returns
-    -------
-    np.ndarray
-        Array of the cumulative calculated for the time_array
+    Returns:
+        np.ndarray: Array of the cumulative calculated for the time_array
     """
     time_array = np.atleast_1d(time_array)
     f = qi/(di*(b-1))
     g = np.power(b*di*time_array+1,(b-1)/b)
     h = np.power(b*di*ti+1,(b-1)/b)
     return f*(g-h)
-
-def arps_arm_cumulative(time_array:np.ndarray,qi:float,di:float,b:float,ti=0)->np.ndarray:
     """arps_exp Calculate the cumulative of Armonic , b=1, Arps Declination
 
     Parameters
@@ -115,6 +98,19 @@ def arps_arm_cumulative(time_array:np.ndarray,qi:float,di:float,b:float,ti=0)->n
     np.ndarray
         Array of the cumulative calculated for the time_array
     """
+def arps_arm_cumulative(time_array:np.ndarray,qi:float,di:float,b:float,ti=0)->np.ndarray:
+    """arps_arm_cumulative Calculate the cumulative of Armonic , b=1, Arps Declination
+
+    Args:
+        time_array (np.ndarray): Array of numbers that represents the periods of timeto calculate cumulative
+        qi (float): Initial rate
+        di (float): Declination Rate
+        b (float): Arps Coefficient
+        ti (int, optional): Initial time at which is referenced the initial rate qi. Defaults to 0.
+
+    Returns:
+        np.ndarray: Array of the cumulative calculated for the time_array
+    """
     time_array = np.atleast_1d(time_array)
     return (qi/di)*np.log((di*time_array + 1)/(di*ti+1))
 
@@ -122,25 +118,17 @@ def arps_arm_cumulative(time_array:np.ndarray,qi:float,di:float,b:float,ti=0)->n
 def arps_forecast(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
                  b:Union[np.ndarray,float],
                  ti:Union[np.ndarray,float]=0.0)->np.ndarray:
-    """arps_decline Estimate the rate forecast for the time_array  given the Arps Parameters
+    """arps_forecast Estimate the rate forecast for the time_array given the Arps Parameters
 
-    Parameters
-    ----------
-    qi : float
-        Initial Rate at ti
-    di : float
-        Decline rate
-    b : float
-        description
-    time_array : Union[np.ndarray, list]
-        array of times to make forecast
-    ti : float, optional
-        Time of the initial rate qi, by default 0.0
+    Args:
+        time_array (Union[np.ndarray, list]): array of times to make forecast
+        qi (Union[np.ndarray,float]): Initial Rate
+        di (Union[np.ndarray,float]): Nominal Declination Rate
+        b (Union[np.ndarray,float]): Arps Coefficient
+        ti (Union[np.ndarray,float], optional): Initial time at which is referenced the initial rate qi. Defaults to 0.0.
 
-    Returns
-    -------
-    np.ndarray
-        Production forecast in a numpy array
+    Returns:
+        np.ndarray: Production forecast in a numpy array
     """
     params_dict = {
         'qi': qi,
@@ -184,25 +172,17 @@ def arps_forecast(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],
 def arps_cumulative(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
                  b:Union[np.ndarray,float],
                  ti:Union[np.ndarray,float]=0.0)->np.ndarray:
-    """arps_cumulative Estimate the cumulative forecast for the time_array  given the Arps Parameters
+    """arps_cumulative Estimate the cumulative forecast for the time_array given the Arps Parameters
 
-    Parameters
-    ----------
-    qi : float
-        Initial Rate at ti
-    di : float
-        Decline rate
-    b : float
-        description
-    time_array : Union[np.ndarray, list]
-        array of times to make forecast
-    ti : float, optional
-        Time of the initial rate qi, by default 0.0
+    Args:
+        time_array (Union[np.ndarray, list]): array of times to make forecast
+        qi (Union[np.ndarray,float]): Initial Rate
+        di (Union[np.ndarray,float]): Nominal Declination Rate
+        b (Union[np.ndarray,float]): Arps Coefficient
+        ti (Union[np.ndarray,float], optional): Initial time at which is referenced the initial rate qi. Defaults to 0.0.
 
-    Returns
-    -------
-    np.ndarray
-        Production cumulative forecast in a numpy array
+    Returns:
+        np.ndarray: Production cumulative forecast in a numpy array
     """
     params_dict = {
     'qi': qi,
@@ -239,23 +219,15 @@ def arps_rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
                  b:Union[np.ndarray,float], rate:Union[int,float,np.ndarray],ti:Union[int,float,np.ndarray]=0)->int:
     """arps_rate_time Estimate the time at which the rate is reached given Arps parameters
 
-    Parameters
-    ----------
-    qi : float
-        Initial Rate at ti
-    di : float
-        Decline rate
-    b : float
-        description
-    rate : float
-        Rate limit at which the forecast must be stop
-    ti : float, optional
-        Time of the initial rate qi, by default 0.0
+    Args:
+        qi (Union[np.ndarray,float]): Initial Rate
+        di (Union[np.ndarray,float]): Nominal Declination Rate
+        b (Union[np.ndarray,float]): Arps Coefficient
+        ti (Union[np.ndarray,float], optional): Initial time at which is referenced the initial rate qi. Defaults to 0.0.
 
-    Returns
-    -------
-    np.ndarray
-        Time at which the rate limit is reached
+    Returns:
+        np.ndarray: Time at which the rate limit is reached
+
     """
     qi = np.atleast_1d(qi)
     di = np.atleast_1d(di)
@@ -268,34 +240,28 @@ def arps_rate_time(qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
         (np.power(qi / rate, b) - 1)/(b * di)
     ) + ti
 
-    #if b == 0:
-    #    time_until = np.log(qi / rate) * (1/di)
-    #else:
-    #    time_until = (np.power(qi / rate, b) - 1)/(b * di)
-    
+   
     return time_until.astype(int)
-
-            
+        
 class Arps(BaseModel,DCA):
-    """Arps Arps decline curve Instance
+    """Arps class represents an instance to store declination parameters to make forecast models in a shcedule model
+    or a simple model. It supports time format as integers or dates
 
-    Attributes
-    ----------
-    qi : float
-        Initial Rate
-    di : float
-        Decline Rate
-    b : float
-        Arps Constant b
-    ti : Union[float,date]
-        Date of the Initial Rate 'qi'
-    freq_di : str
-        Frequency at with is reported the decline rate
+    Attributes:
+        qi: (Union[ProbVar,List[float],float]) : Initial rate. Defaults to None.
+        di: (Union[ProbVar,List[float],float]) : Nominal Declination Rate. Defaults to None.
+        b: (Union[ProbVar,List[float],float]) : Arps Coefficient. Defaults to None.
+        ti: (Union[int,date,List[int],List[date]]) : Initial time at which is referenced the initial rate qi. Defaults to None.
+        freq_di: (FreqEnum) : Nominal Declination Rate Frecuency. Defaults to 'M'
+        seed : (Optional[int]) : Seed to generate reproducible random numbers. Defaults to None.
+        fluid_rate: (Optional[Union[float,List[float]]]) : Fluid rate used to estimate water rate. Defaults to None.
+        bsw: (Optional[Union[float,List[float]]]) : Bsw used to estimate water rate. Defaults to None.
+        wor: (Optional[Union[float,List[float]]]) : Wor used to estimate water rate. Defaults to None.
+        gor: (Optional[Union[float,List[float]]]) : Gor used to estimate gas rate. Defaults to None.
+        glr: (Optional[Union[float,List[float]]]) : Glr used to estimate gas rate. Defaults to None.
 
-    Methods
-    ----------
-    rate_time
-        Estimate the time at which the Arps instance would reach the defined rate
+    Returns:
+        [Arps]: Arps instance
     """
     qi: Union[ProbVar,List[float],float] = Field(None)
     di: Union[ProbVar,List[float],float] = Field(None)

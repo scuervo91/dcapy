@@ -10,3 +10,10 @@ The key features are:
 + **Cash Flow**: Add cashflow parameters (Income, opex, capex) to perform a cashflow analysis 
 + **Deterministic/Probabilistic**: Add probabilistic variables to add a risk analysis to both simple forecast and schedules.
 + **Data Validation**: Dcapy uses Pydantic to make data validations when creating new instances
+
+
+```console
+$ pip install dcapy
+
+---> 100%
+```
