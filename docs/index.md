@@ -11,9 +11,10 @@ The key features are:
 + **Deterministic/Probabilistic**: Add probabilistic variables to add a risk analysis to both simple forecast and schedules.
 + **Data Validation**: Dcapy uses Pydantic to make data validations when creating new instances
 
-
+<div class="termy">
 ```console
 $ pip install dcapy
 
 ---> 100%
 ```
+</div>
