@@ -129,7 +129,7 @@ dmypy.json
 .pyre/
 Case-Petrophysics.ipynb
 .DS_Store
-test/
+#test/
 .vscode/
 
 examples/welllogs/1-basics/logs.las
