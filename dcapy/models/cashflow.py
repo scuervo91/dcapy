@@ -51,9 +51,8 @@ class CashFlow(BaseModel):
         
     def get_cashflow(self, freq_output=None):
         #Get the date format according the frequency specified
-
-        freq_out = self.freq if freq_output is None else freq_output
-
+        if freq_output is None:
+            freq_output = self.freq
 
         #Create the timeSeries either with dates or integers
         if isinstance(self.const_value, list):
@@ -82,7 +81,7 @@ class CashFlow(BaseModel):
         #output frequency to Annual, then a groupby-sum operation will be performed to get 
         #the desired period of time
         if isinstance(self.start,date):
-            time_series = time_series.to_timestamp().to_period(freq_out).groupby(level=0).agg('sum')
+            time_series = time_series.to_timestamp().to_period(freq_output).groupby(level=0).agg('sum')
 
         return time_series
 
@@ -96,14 +95,7 @@ class CashFlowParams(BaseModel):
     agg : Literal['sum','mean'] = Field('sum')
     wi : float = Field(1,ge=0,le=1)
 
-
-class CashFlowInput(BaseModel):
-    params_list : List[CashFlowParams]
-
-    class Config:
-        validate_assignment = True
-        arbitrary_types_allowed = True
-          
+     
 class CashFlowModel(BaseModel):
     name : str
     income : Optional[List[CashFlow]]
@@ -197,11 +189,11 @@ class CashFlowModel(BaseModel):
         rates = np.atleast_1d(rates)
         fcf = self.fcf(freq_output=freq_output)
 
-        npv_dict = {}
+        npv_list = []
         for i in rates:
-            npv_dict[i] = npf.npv(i,fcf['fcf'].values)
-
-        return npv_dict
+            npv_i = npf.npv(i,fcf['fcf'].values)
+            npv_list.append(npv_i)
+        return pd.DataFrame({'npv':npv_list}, index=rates)
 
 
 

@@ -1,8 +1,4 @@
 import os
-path = os.path.abspath(os.path.join('..'))
-print(path)
-import sys
-sys.path.insert(0,path)
 from dcapy import dca
 from dcapy.models import CashFlow, ChgPts, CashFlowModel, CashFlowInput, Period, Scenario
 
@@ -15,7 +11,7 @@ period1 = {
 	'name':'pdp',
 	'dca': {
         'ti':'2021-01-01',
-        'di':[0.3,0.4],
+        'di':[0.3],
         'freq_di':'A',
         'qi':[800,900,852],
         'b':0,
