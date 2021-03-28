@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from scipy import stats
 
 #Local Imports
-from .dca import DCA 
+from .dca import DCA, ProbVar
 from .timeconverter import list_freq, converter_factor, time_converter_matrix, check_value_or_prob, FreqEnum
 
 
@@ -100,8 +100,8 @@ def wor_forecast(time_array:np.ndarray,fluid_rate:Union[float,np.ndarray], slope
 
 class Wor(BaseModel,DCA):
 
-    bsw: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
-    slope: Union[stats._distn_infrastructure.rv_frozen,List[float],float] = Field(...)
+    bsw: Union[ProbVar,List[float],float] = Field(...)
+    slope: Union[ProbVar,List[float],float] = Field(...)
     fluid_rate : Union[float,List[float],List[List[float]]] = Field(...)
     ti: Union[int,date] = Field(...)
     seed : Optional[int] = Field(None)
@@ -113,26 +113,32 @@ class Wor(BaseModel,DCA):
         arbitrary_types_allowed = True
 
     def get_bsw(self,size=None, ppf=None):
-        if isinstance(self.bsw,stats._distn_infrastructure.rv_frozen):
-            if size is None:
-                return self.bsw.mean()
-            elif ppf is None:
-                return self.bsw.rvs(size=size,random_state=self.seed)
-            else:
-                return self.bsw.ppf(ppf)
+        """get_bsw get the number of bsw
 
+        Args:
+            size ([type], optional): number of iterations. Defaults to None.
+            ppf ([type], optional): percentil. Defaults to None.
+
+        Returns:
+            np.array: Array if bsw
+        """
+        if isinstance(self.bsw,ProbVar):
+            return self.bsw.get_sample(size=size, ppf=ppf)
         else:
             return np.atleast_1d(self.bsw)
 
     def get_slope(self,size=None, ppf=None):
-        if isinstance(self.slope,stats._distn_infrastructure.rv_frozen):
-            if size is None:
-                return self.slope.mean()
-            elif ppf is None:
-                return self.slope.rvs(size=size,random_state=self.seed)
-            else:
-                return self.slope.ppf(ppf)
+        """get_slope get the number of slope
 
+        Args:
+            size ([type], optional): number of iterations. Defaults to None.
+            ppf ([type], optional): percentil. Defaults to None.
+
+        Returns:
+            np.array: Array if slope
+        """
+        if isinstance(self.slope,ProbVar):
+            return self.slope.get_sample(size=size, ppf=ppf)
         else:
             return np.atleast_1d(self.slope)
 

@@ -1,9 +1,5 @@
 
 import os
-path = os.path.abspath(os.path.join('..'))
-print(path)
-import sys
-sys.path.insert(0,path)
 from dcapy import dca
 import numpy as np 
 import pandas as pd
