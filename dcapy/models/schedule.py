@@ -154,7 +154,8 @@ class Period(BaseModel):
 					else:
 						if param.const_value:
 							cashflow_dict.update({
-								'const_value':param.const_value * param.wi
+								'const_value':param.const_value * param.wi,
+								'periods':param.periods
 							})
 						if param.array_values:
 							cashflow_dict.update({
@@ -169,8 +170,6 @@ class Period(BaseModel):
 				for key in cashflow_model_dict:
 					if len(cashflow_model_dict[key]) == 0:
 						del cashflow_model_dict[key]
-
-
 
 				cashflow_model = CashFlowModel(**cashflow_model_dict)
 				list_cashflow_model.append(cashflow_model)
@@ -264,7 +263,6 @@ class Scenario(BaseModel):
 					new_ti = [i + _periods[p].depends.delay for i in new_ti]
 
 				_periods[p].dca.ti = new_ti
-				print(new_ti)
 			_f = _periods[p].generate_forecast(freq_output=freq_output)
 			#try:
 			#	_f = _periods[p].generate_forecast()

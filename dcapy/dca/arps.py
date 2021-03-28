@@ -472,7 +472,7 @@ class Arps(BaseModel,DCA):
         )
         _forecast_df.index.name='date'
         for i in _forecast_df['iteration'].unique():
-            _forecast_df.loc[_forecast_df['iteration']==i,'oil_volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'oil_cum'].values,prepend=0)
+            _forecast_df.loc[_forecast_df['iteration']==i,'oil_volume'] = np.gradient(_forecast_df.loc[_forecast_df['iteration']==i,'oil_cum'].values)
                 
         #Water Rate
         if any([i is not None for i in [self.fluid_rate,self.bsw,self.wor]]):
@@ -503,8 +503,8 @@ class Arps(BaseModel,DCA):
                     
                 _forecast_df.loc[_forecast_df['iteration']==i,'water_cum'] = _forecast_df.loc[_forecast_df['iteration']==i,'water_rate'].multiply(cum_factor).multiply(delta_time).cumsum()
                 _forecast_df.loc[_forecast_df['iteration']==i,'fluid_cum'] = _forecast_df.loc[_forecast_df['iteration']==i,'fluid_rate'].multiply(cum_factor).multiply(delta_time).cumsum()                
-                _forecast_df.loc[_forecast_df['iteration']==i,'water_volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'water_cum'].values,prepend=0)
-                _forecast_df.loc[_forecast_df['iteration']==i,'fluid_volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'fluid_cum'].values,prepend=0) 
+                _forecast_df.loc[_forecast_df['iteration']==i,'water_volume'] = np.gradient(_forecast_df.loc[_forecast_df['iteration']==i,'water_cum'].values)
+                _forecast_df.loc[_forecast_df['iteration']==i,'fluid_volume'] = np.gradient(_forecast_df.loc[_forecast_df['iteration']==i,'fluid_cum'].values) 
         #Gas Rate
         if any([i is not None for i in [self.gor,self.glr]]):
                               
@@ -525,7 +525,7 @@ class Arps(BaseModel,DCA):
                     delta_time = np.diff(_f_index,prepend=0)
                     
                 _forecast_df.loc[_forecast_df['iteration']==i,'gas_cum'] = _forecast_df.loc[_forecast_df['iteration']==i,'gas_rate'].multiply(cum_factor).multiply(delta_time).cumsum()
-                _forecast_df.loc[_forecast_df['iteration']==i,'gas_volume'] = np.diff(_forecast_df.loc[_forecast_df['iteration']==i,'gas_cum'].values,prepend=0)
+                _forecast_df.loc[_forecast_df['iteration']==i,'gas_volume'] = np.gradient(_forecast_df.loc[_forecast_df['iteration']==i,'gas_cum'].values)
 
         return _forecast_df.dropna()
 

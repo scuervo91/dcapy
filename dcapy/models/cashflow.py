@@ -28,7 +28,7 @@ class CashFlow(BaseModel):
     const_value : Union[float,List[float]] = Field(0)
     start : Union[int,date] = Field(...)
     end : Union[int,date] = Field(...)
-    periods : Optional[int] = Field(None)
+    periods : Optional[int] = Field(None, gt=0)
     freq: Literal['M','D','A'] = Field('M')
     chgpts: Optional[ChgPts] = Field(None)
 
@@ -57,7 +57,10 @@ class CashFlow(BaseModel):
         #Create the timeSeries either with dates or integers
         if isinstance(self.const_value, list):
             periods = len(self.const_value)
-        prng = pd.period_range(start=self.start, end=self.end, periods=self.periods, freq=self.freq) if isinstance(self.start,date) else np.arange(self.start, self.end,1)
+        if self.periods:
+            prng = pd.period_range(start=self.start, periods=self.periods, freq=self.freq) if isinstance(self.start,date) else np.arange(self.start, self.end,1)
+        else:
+            prng = pd.period_range(start=self.start, end=self.end, periods=self.periods, freq=self.freq) if isinstance(self.start,date) else np.arange(self.start, self.end,1)
         periods = len(prng)
         if not isinstance(self.const_value, list):
             const_value = [self.const_value] * periods
@@ -88,12 +91,14 @@ class CashFlow(BaseModel):
 
 class CashFlowParams(BaseModel):
     name : str
-    const_value : Optional[float]
-    array_values : Optional[ChgPts]
-    target : Literal['income','opex','capex']
-    multiply : Optional[str]
+    const_value : Optional[float] = Field(None)
+    periods : Optional[int] = Field(None, gt=0)
+    array_values : Optional[ChgPts] = Field(None)
+    target : Literal['income','opex','capex'] = Field(...)
+    multiply : Optional[str] = Field(None)
     agg : Literal['sum','mean'] = Field('sum')
     wi : float = Field(1,ge=0,le=1)
+    depends: bool = Field(False)
 
      
 class CashFlowModel(BaseModel):
