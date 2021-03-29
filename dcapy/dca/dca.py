@@ -59,7 +59,7 @@ class Forecast(BaseModel):
     Returns:
         forecast: Forecast instance
     """
-    date : List[Union[date,int]]
+    date : List[Union[int,date]]
     oil_rate : Optional[List[float]]
     oil_cum : Optional[List[float]]
     oil_volume : Optional[List[float]]
@@ -84,9 +84,12 @@ class Forecast(BaseModel):
         _forecast_dict = self.dict()
         freq = _forecast_dict.pop('freq')
         _fr = pd.DataFrame(_forecast_dict)
-        _fr['date'] = pd.to_datetime(_fr['date'])
-        _fr.set_index('date',inplace=True)
-        _fr = _fr.to_period(freq)
+        if isinstance(self.date[0],date):
+            _fr['date'] = pd.to_datetime(_fr['date'])
+            _fr.set_index('date',inplace=True)
+            _fr = _fr.to_period(freq)
+        else:
+            _fr.set_index('date',inplace=True)
 
         return _fr
 

@@ -5,6 +5,9 @@ import pandas as pd
 import numpy as np
 import numpy_financial as npf
 
+from ..dca import converter_factor
+
+
 freq_format={
     'M':'%Y-%m',
     'D':'%Y-%m-%d',
@@ -29,7 +32,8 @@ class CashFlow(BaseModel):
     start : Union[int,date] = Field(...)
     end : Union[int,date] = Field(...)
     periods : Optional[int] = Field(None, gt=0)
-    freq: Literal['M','D','A'] = Field('M')
+    freq_output: Literal['M','D','A'] = Field('M')
+    freq_input: Literal['M','D','A'] = Field('M')
     chgpts: Optional[ChgPts] = Field(None)
 
     @validator('end')
@@ -49,18 +53,19 @@ class CashFlow(BaseModel):
         arbitrary_types_allowed = True
         validate_assignment = True
         
-    def get_cashflow(self, freq_output=None):
+    def get_cashflow(self,freq_output=None):
         #Get the date format according the frequency specified
         if freq_output is None:
-            freq_output = self.freq
+            freq_output = self.freq_output
 
+        c = converter_factor(self.freq_input,self.freq_output)
         #Create the timeSeries either with dates or integers
         if isinstance(self.const_value, list):
             periods = len(self.const_value)
         if self.periods:
-            prng = pd.period_range(start=self.start, periods=self.periods, freq=self.freq) if isinstance(self.start,date) else np.arange(self.start, self.end,1)
+            prng = pd.period_range(start=self.start, periods=self.periods, freq=self.freq_output) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
         else:
-            prng = pd.period_range(start=self.start, end=self.end, periods=self.periods, freq=self.freq) if isinstance(self.start,date) else np.arange(self.start, self.end,1)
+            prng = pd.period_range(start=self.start, end=self.end, periods=self.periods, freq=self.freq_output) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
         periods = len(prng)
         if not isinstance(self.const_value, list):
             const_value = [self.const_value] * periods
@@ -70,7 +75,7 @@ class CashFlow(BaseModel):
         #assign each index to corresponding cashflow time
         if self.chgpts:
 
-            fmt = freq_format[self.freq]
+            fmt = freq_format[self.freq_output]
 
             for i in zip(self.chgpts.date,self.chgpts.value):
                 idx = i[0].strftime(fmt) if isinstance(i[0],date) else i[0]
@@ -111,7 +116,6 @@ class CashFlowModel(BaseModel):
         validate_assignment = True
         arbitrary_types_allowed = True
 
-    # TODO: Method to estimate de Free Cash Flow
     
     def append(self, cashflow_model):
 

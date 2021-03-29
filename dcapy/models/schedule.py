@@ -68,9 +68,11 @@ class Period(BaseModel):
 		)
 		_forecast['period'] = self.name
 
-		if isinstance(_forecast.index[0],int):
+		if self.dca.format()=='number':
+
 			self.forecast = Forecast(freq=freq_output,**_forecast.reset_index().to_dict(orient='list'))
 		else:
+
 			self.forecast = Forecast(freq=freq_output,**_forecast.to_timestamp().reset_index().to_dict(orient='list'))
 		return _forecast
 
@@ -78,7 +80,10 @@ class Period(BaseModel):
 		if self.forecast:
 			_df = self.forecast.df().reset_index()
 			dates_sr = _df.groupby('iteration')['date'].max()
-			return [i.to_timestamp().date() for i in dates_sr]
+			if self.dca.format()=='date':
+				return [i.to_timestamp().date() for i in dates_sr]
+			else:	
+				return [i for i in dates_sr]
 		raise ValueError('There is no any Forecast')
 
 	def generate_cashflow(self, freq_output=None):
@@ -113,7 +118,7 @@ class Period(BaseModel):
 						'name':param.name,
 						'start':_forecast_i.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.min(),
 						'end':_forecast_i.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.max(),
-						'freq':freq_output
+						'freq_output':freq_output,'freq_input':self.freq_input
 					})
 
 
@@ -146,7 +151,7 @@ class Period(BaseModel):
 							else:
 								cashflow_dict.update({
 									'chgpts':{
-										'date':_array_values.index.strftime('%Y-%m-%d').tolist(),
+										'date':_array_values.index.strftime('%Y-%m-%d').tolist() if is_date_mode else _array_values.index,
 										'value':_array_values.tolist()
 									}
 								})
@@ -170,7 +175,7 @@ class Period(BaseModel):
 				for key in cashflow_model_dict:
 					if len(cashflow_model_dict[key]) == 0:
 						del cashflow_model_dict[key]
-
+				
 				cashflow_model = CashFlowModel(**cashflow_model_dict)
 				list_cashflow_model.append(cashflow_model)
 
