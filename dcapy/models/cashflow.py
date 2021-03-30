@@ -95,7 +95,8 @@ class CashFlow(BaseModel):
 
 
 class CashFlowParams(BaseModel):
-    name : str
+    name : str = Field(...)
+    iter: int = Field(1,ge=1) 
     const_value : Optional[float] = Field(None)
     periods : Optional[int] = Field(None, gt=0)
     array_values : Optional[ChgPts] = Field(None)
