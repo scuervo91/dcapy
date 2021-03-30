@@ -166,7 +166,6 @@ def arps_forecast(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],
         )
     )
     
-    
     return np.squeeze(f.T)
 
 def arps_cumulative(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float],di:Union[np.ndarray,float],
@@ -416,12 +415,13 @@ class Arps(BaseModel,DCA):
                 assert all(isinstance(i,date) for i in [start,end])
                 time_list = pd.period_range(start=start, end=end, freq=freq_output)
 
-            ti_array = np.array([i.toordinal() for i in np.atleast_1d(self.ti)], dtype=int)
-            ti_delta = ti_array - ti_array[0]
-
+           
             time_range = pd.Series(time_list)
             time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()) - ti_array.min()
             time_array = time_array.values
+            
+            ti_array = np.array([i.toordinal() for i in np.atleast_1d(self.ti)], dtype=int)
+            ti_delta = ti_array - time_array.min()
             di_factor = converter_factor(self.freq_di,'D')
         else:
             if time_list is not None:
@@ -434,7 +434,9 @@ class Arps(BaseModel,DCA):
                 assert fq>=1, 'The output frecuency must be greater than input'
                 time_list = np.arange(start, end, int(fq))
 
-            ti_delta = np.zeros(1)
+            ti_array = np.atleast_1d(self.ti).astype(int)
+            
+            ti_delta = ti_array - time_list.min()
             time_array = time_list
             time_range = time_list
             di_factor = converter_factor(self.freq_di,freq_input)
@@ -527,7 +529,7 @@ class Arps(BaseModel,DCA):
                 _forecast_df.loc[_forecast_df['iteration']==i,'gas_cum'] = _forecast_df.loc[_forecast_df['iteration']==i,'gas_rate'].multiply(cum_factor).multiply(delta_time).cumsum()
                 _forecast_df.loc[_forecast_df['iteration']==i,'gas_volume'] = np.gradient(_forecast_df.loc[_forecast_df['iteration']==i,'gas_cum'].values)
 
-        return _forecast_df.dropna()
+        return _forecast_df.dropna(axis=0,subset=['oil_rate'])
 
     def fit(self,df:pd.DataFrame=None,time:Union[str,np.ndarray,pd.Series]=None,
             rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={},prob=False):

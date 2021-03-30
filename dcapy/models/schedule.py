@@ -23,7 +23,7 @@ freq_format={
 
 class Depends(BaseModel):
     period : str = Field(...)
-    delay : timedelta = Field(None)
+    delay : Union[timedelta,int] = Field(None)
   
 class Period(BaseModel):
 	name : str
@@ -58,13 +58,21 @@ class Period(BaseModel):
 		if isinstance(self.start,int):
 			return False
 
-	def generate_forecast(self, freq_output=None):
+	def generate_forecast(self, freq_output=None, iter=None):
+		#If freq_output is not defined in the method. 
+  		# Use the freq_out defined in the class
 		if freq_output is None:
 			freq_output = self.freq_output
+
+		#If freq_output is not defined in the method. 
+  		# Use the freq_out defined in the class
+		if iter is None:
+			iter = self.iter
+   
 		_forecast = self.dca.forecast(
 			time_list = self.time_list,start=self.start, end=self.end, freq_input=self.freq_input, 
 			freq_output=freq_output, rate_limit=self.rate_limit, 
-   			cum_limit=self.cum_limit, iter=self.iter, ppf=self.ppf
+   			cum_limit=self.cum_limit, iter=iter, ppf=self.ppf
 		)
 		_forecast['period'] = self.name
 
@@ -223,19 +231,20 @@ class Scenario(BaseModel):
 	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
 	cashflow : Optional[List[CashFlowModel]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
-	freq_output: Optional[Literal['M','D','A']] = Field(None)
- 
-	@validator('freq_output', always=True)
-	def match_periods_freqs(cls,v,values):
+
+	@validator('periods', always=True)
+	def match_periods_freqs(cls,v):
+		format_list = []
+		for i in v:
+			format_list.append(i.dca.format())
+
 		freq_list = []
-		for i in values['periods']:
+		for i in v:
 			freq_list.append(i.freq_output)
 
-		if all(i==freq_list[0] for i in freq_list):
-			return freq_list[0]
-		else:
-			raise ValueError('Periods must have same freq_output')
-
+		if all(i==format_list[0] for i in format_list)&all(i==freq_list[0] for i in freq_list):
+			return v 
+		raise ValueError(f'The format of the periods are different {format_list}')
 	
 	class Config:
 		arbitrary_types_allowed = True
@@ -243,9 +252,10 @@ class Scenario(BaseModel):
 
 	# TODO: Make validation for all periods are in the same time basis (Integers or date)
 
-	def generate_forecast(self, periods:list = None, freq_output=None):
+	def generate_forecast(self, periods:list = None, freq_output=None, iter=None):
 		if freq_output is None:
-			freq_output = self.freq_output
+			freq_output = self.periods[0].freq_output
+		
 		#Make filter
 		if periods:
 			_periods = {i.name:i for i in self.periods if i.name in periods}
@@ -257,7 +267,6 @@ class Scenario(BaseModel):
 		list_periods_errors = []
 
 		for p in _periods:
-			
 			if _periods[p].depends:
 				#Get the last dates of the forecast present period depends on
 				depend_period = _periods[p].depends.period
@@ -268,7 +277,8 @@ class Scenario(BaseModel):
 					new_ti = [i + _periods[p].depends.delay for i in new_ti]
 
 				_periods[p].dca.ti = new_ti
-			_f = _periods[p].generate_forecast(freq_output=freq_output)
+			_f = _periods[p].generate_forecast(freq_output=freq_output, iter=iter)
+			
 			#try:
 			#	_f = _periods[p].generate_forecast()
 			#except Exception as e:
@@ -281,7 +291,7 @@ class Scenario(BaseModel):
 		scenario_forecast = pd.concat(list_forecast, axis=0)
 		scenario_forecast['scenario'] = self.name
 
-		if isinstance(scenario_forecast.index[0],int):
+		if self.periods[0].dca.format()=='number':
 			self.forecast = Forecast(freq=freq_output,**scenario_forecast.reset_index().to_dict(orient='list'))
 		else:
 			self.forecast = Forecast(freq=freq_output,**scenario_forecast.to_timestamp().reset_index().to_dict(orient='list'))
@@ -304,7 +314,7 @@ class Scenario(BaseModel):
 
 	def generate_cashflow(self,periods:list = None, freq_output=None):
 		if freq_output is None:
-			freq_output = self.freq_output
+			freq_output = self.periods[0].freq_output
 		#Make filter
 		if periods:
 			_periods = [i for i in self.periods if i.name in periods]
