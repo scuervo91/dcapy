@@ -103,8 +103,9 @@ allowed_prob_dist.extend(dist_continu)
 
 
 class ProbVar(BaseModel):
-    dist: str
-    kw : dict
+    dist: str = Field('norm')
+    kw : dict = Field({'loc':0,'scale':1})
+    seed : int = Field(None)
 
     @validator('kw')
     def check_dist_build(cls,v,values):
@@ -116,11 +117,13 @@ class ProbVar(BaseModel):
     def get_instance(self):
         return getattr(stats,self.dist)(**self.kw)
 
-    def get_sample(self, size:int=None, ppf:float=None):
+    def get_sample(self, size:Union[int,tuple]=None, ppf:float=None, seed=None):
+        if seed is None:
+            seed = self.seed
 
         if size:
-            return getattr(stats,self.dist)(**self.kw).rvs(size=size)
-        elif ppf:
+            return getattr(stats,self.dist)(**self.kw).rvs(size=size,random_state=seed)
+        elif ppf is not None:
             return getattr(stats,self.dist)(**self.kw).ppf(ppf)
         else:
             return getattr(stats,self.dist)(**self.kw).mean()
