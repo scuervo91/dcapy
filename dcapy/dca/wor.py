@@ -58,7 +58,8 @@ def wor_forecast(time_array:np.ndarray,fluid_rate:Union[float,np.ndarray], slope
     water_cum = np.zeros(time_array.shape[0])
     water_cum[0] = water_rate[0]*delta_time[0]
 
-
+    fluid_cum = np.zeros(time_array.shape[0])
+    fluid_cum[0] = fluid_rate[0]*delta_time[0]
 
     for i in range(1,delta_time.shape[0]-1):
         wor_1[i] = np.exp(slope*oil_cum[i-1])*wor_1[i-1]
@@ -68,6 +69,7 @@ def wor_forecast(time_array:np.ndarray,fluid_rate:Union[float,np.ndarray], slope
         water_rate[i] = fluid_rate[i]*bsw[i]
         oil_cum[i] = oil_cum[i-1] + oil_rate[i]*delta_time[i]
         water_cum[i] = water_cum[i-1] + water_rate[i]*delta_time[i]
+        fluid_cum[i] = water_cum[i] + oil_cum[i]
         if rate_limit:
             if oil_rate[i] <= rate_limit:
                 break
@@ -89,10 +91,14 @@ def wor_forecast(time_array:np.ndarray,fluid_rate:Union[float,np.ndarray], slope
             'bsw':bsw,
             'wor':wor,
             'wor_1':wor_1,
-            'delta_time':delta_time
+            'delta_time':delta_time,
+            'fluid_rate':fluid_rate,
+            'fluid_cum' : fluid_cum
             },
             index = time_array
     )
+    
+    _forecast.index.name = 'date'
 
     return _forecast[:i+1]
 
@@ -199,7 +205,7 @@ class Wor(BaseModel,DCA):
 
         #Broadcast three variables
         br = np.broadcast(bsw,slope,np.zeros(fluid_rate.shape[0]))
-
+        
         #Convert varibles into broadcast shape
         _bsw = bsw * np.ones(br.shape)
         _slope = slope * np.ones(br.shape)
@@ -223,12 +229,13 @@ class Wor(BaseModel,DCA):
             #The fluid rate is multiplied by a factor to estimate the cumulative production.            
             _f = wor_forecast(time_array,_fluid[i]*freq_factor, _slope[i], _wor, rate_limit=rate_limit,
                 cum_limit=cum_limit, wor_limit=wor_limit)
-
+            
             #Convert the rates in daily 
             _f[['oil_rate','water_rate']] = _f[['oil_rate','water_rate']]/freq_factor
 
             _f['iteration'] = i
-            _f.index = time_range[1:_f.shape[0]+1]
+            #_f.index = time_range[1:_f.shape[0]+1]
+            _f.index = time_range[0:_f.shape[0]]
 
             _f['oil_volume'] = np.diff(_f['oil_cum'].values,prepend=0)
             _f['water_volume'] = np.diff(_f['water_cum'].values,prepend=0)
@@ -239,7 +246,7 @@ class Wor(BaseModel,DCA):
 
                 if self.gor:
                     _f['gas_cum'] = _f['oil_cum'].multiply(self.gor) 
-                    _f['gas_volume'] = np.diff(_f['gas_cum'], prepend=0) / _f['delta_time']
+                    _f['gas_volume'] = np.diff(_f['gas_cum'], prepend=0) #/ _f['delta_time']
                     _f['gas_rate'] = _f['gas_volume'] / _f['delta_time']
                 elif self.glr:
                     _f['gas_cum'] = _f['oil_cum'].add(_f['water_cum']).multiply(self.glr) 
@@ -251,7 +258,7 @@ class Wor(BaseModel,DCA):
 
 
         _forecast = pd.concat(list_forecast, axis=0)
-
+        _forecast.index.name = 'date'
 
         return _forecast
 

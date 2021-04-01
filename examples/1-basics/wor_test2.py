@@ -19,13 +19,14 @@ def main():
     print(w1.json())
 
     data = dict(
-    start = date(2021,1,1),
-    end = date(2021,1,10),
-    freq_input = 'D',
-    freq_output = 'D',
-    rate_limit = 480,
+        start = date(2021,1,1),
+        end = date(2021,1,10),
+        freq_input = 'D',
+        freq_output = 'D',
+        rate_limit = 480,
     )
     print(w1.forecast(**data))
+    w1.forecast(**data).to_csv('wor_test_2.csv')
 
 
 if __name__ == '__main__':
