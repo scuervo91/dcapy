@@ -356,11 +356,11 @@ class Scenario(BaseModel):
 			#Example: If the Cashflow is given in monthly basis and the discount
 			#rates was given in Annual basis, then convert the discount rates
 			#to montly by applying: (1+rate)^(0.0833) - 1
-			c = converter_factor(freq,self.freq_output)
+			c = converter_factor(freq,self.periods[0].freq_output)
 			rates = np.power(1 + rates,c) - 1
 			
 			for i,v in enumerate(self.cashflow):
-				npv_i = v.npv(rates,freq_output=self.freq_output)
+				npv_i = v.npv(rates,freq_output=self.periods[0].freq_output)
 				npv_i['iteration'] = i
 				npv_list.append(npv_i)
 
@@ -377,3 +377,84 @@ class Scenario(BaseModel):
 
 
 		return pd.DataFrame({'irr':irr_list})
+
+
+class Well(BaseModel):
+	name : str 
+	schedule : List[Scenario]
+	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
+	cashflow : Optional[List[CashFlowModel]] = Field(None)
+	forecast: Optional[Forecast] = Field(None)
+ 
+ 
+	def generate_forecast(self, scenarios:Union[list,dict] = None, freq_output=None, iter=None):
+		#Make filter
+		if scenarios:
+			scenarios_list = scenarios if isinstance(scenarios,list) else list(scenarios.keys())
+			_scenarios = [i for i in self.schedule if i.name in scenarios_list]
+		else:
+			_scenarios = self.schedule
+   
+		list_forecast = []
+  
+		for s in _scenarios:
+			periods = scenarios[s.name] if isinstance(scenarios,dict) else None
+			_f = _scenarios[s].generate_forecast(periods = periods, freq_output=freq_output, iter=iter)
+
+			list_forecast.append(_f)
+   
+		well_forecast = pd.concat(list_forecast, axis=0)
+		well_forecast['well'] = self.name
+
+		if _scenarios.periods[0].dca.format()=='number':
+			self.forecast = Forecast(freq=freq_output,**well_forecast.reset_index().to_dict(orient='list'))
+		else:
+			self.forecast = Forecast(freq=freq_output,**well_forecast.to_timestamp().reset_index().to_dict(orient='list'))
+
+		return well_forecast
+   
+class WellsGroup(BaseModel):
+	name : str 
+	wells : List[Well]
+	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
+	cashflow : Optional[List[CashFlowModel]] = Field(None)
+	forecast: Optional[Forecast] = Field(None)
+ 
+	def generate_forecast(self, wells:Union[list,dict] = None, freq_output=None, iter=None):
+		#Make filter
+		if wells:
+			wells_list = wells if isinstance(wells,list) else list(wells.keys())
+			_wells = [i for i in self.wells if i.name in wells_list]
+		else:
+			_wells = self.schedule
+   
+		list_forecast = []
+  
+		for w in _wells:
+			scenarios = wells[w.name] if isinstance(wells,dict) else None
+			_f = _wells[w].generate_forecast(scenarios = scenarios, freq_output=freq_output, iter=iter)
+
+			list_forecast.append(_f)
+   
+		wells_forecast = pd.concat(list_forecast, axis=0)
+
+		if _wells.schedule.periods[0].dca.format()=='number':
+			self.forecast = Forecast(freq=freq_output,**wells_forecast.reset_index().to_dict(orient='list'))
+		else:
+			self.forecast = Forecast(freq=freq_output,**wells_forecast.to_timestamp().reset_index().to_dict(orient='list'))
+
+		return wells_forecast
+
+
+def model_from_dict(d:dict):
+    
+    instance = d.pop('instance')
+    
+    if instance == 'period':
+        return Period(**d)
+    if instance == 'scenario':
+        return Scenario(**d)
+    if instance == 'well':
+        return Well(**d)
+    if instance == 'wells-group':
+        return WellsGroup(**d)
