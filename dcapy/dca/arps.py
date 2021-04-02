@@ -415,13 +415,12 @@ class Arps(BaseModel,DCA):
                 assert all(isinstance(i,date) for i in [start,end])
                 time_list = pd.period_range(start=start, end=end, freq=freq_output)
 
-           
+            ti_array = np.array([i.toordinal() for i in np.atleast_1d(self.ti)], dtype=int)
             time_range = pd.Series(time_list)
-            time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()) - ti_array.min()
+            time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()) - ti_array
             time_array = time_array.values
             
-            ti_array = np.array([i.toordinal() for i in np.atleast_1d(self.ti)], dtype=int)
-            ti_delta = ti_array - time_array.min()
+            ti_delta = ti_array - ti_array.min()
             di_factor = converter_factor(self.freq_di,'D')
         else:
             if time_list is not None:
@@ -459,7 +458,7 @@ class Arps(BaseModel,DCA):
                 time_index = time_array<=time_limit.reshape(-1,1)
                 time_array = np.tile(time_array,(iter,1)).astype('float')
                 time_array[~time_index] = np.nan
-                
+        print(time_array,qi,di,b,ti_delta)
         cum_factor = converter_factor('D',freq_input) if self.format() == 'number' else 1
         _forecast = arps_forecast(time_array,qi,di,b,ti=ti_delta).flatten('F')
         _cumulative = arps_cumulative(time_array,qi*cum_factor,di,b,ti=ti_delta).flatten('F')
