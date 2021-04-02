@@ -27,6 +27,8 @@ def main():
     )
     print(w1.forecast(**data))
     w1.forecast(**data).to_csv('wor_test_2.csv')
+    
+    
 
 
 if __name__ == '__main__':

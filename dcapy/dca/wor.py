@@ -261,7 +261,7 @@ class Wor(BaseModel,DCA):
         _forecast.index.name = 'date'
         
         if self.format() == 'date' and freq_output!='D':
-            _forecast.to_period(freq_output)
+            _forecast = _forecast.to_timestamp().to_period(freq=freq_output)
             _forecast.reset_index(inplace=True)
             _forecast = _forecast.groupby(
                 ['date','iteration']
