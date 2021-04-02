@@ -32,7 +32,8 @@ def wor_forecast(time_array:np.ndarray,fluid_rate:Union[float,np.ndarray], slope
     time_array = np.atleast_1d(time_array)
     fluid_rate = np.atleast_1d(fluid_rate)
 
-    delta_time = np.diff(time_array,append=0)
+    #delta_time = np.diff(time_array,append=0)
+    delta_time = np.gradient(time_array)
 
     wor_i1 = wor_i + 1
 
@@ -62,8 +63,8 @@ def wor_forecast(time_array:np.ndarray,fluid_rate:Union[float,np.ndarray], slope
     fluid_cum[0] = fluid_rate[0]*delta_time[0]
 
     for i in range(1,delta_time.shape[0]-1):
-        wor_1[i] = np.exp(slope*oil_cum[i-1])*wor_1[i-1]
-        wor[i] = wor_1[i] - 1
+        wor[i] = np.exp(slope*oil_cum[i-1])*wor_i
+        wor_1[i] = wor[i] + 1
         bsw[i] = wor_to_bsw(wor[i])
         oil_rate[i] = fluid_rate[i]*(1-bsw[i])
         water_rate[i] = fluid_rate[i]*bsw[i]
@@ -159,16 +160,16 @@ class Wor(BaseModel,DCA):
     	freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None,**kwargs)->pd.DataFrame:
 
         if self.format() == 'date':
-
+            freq_input = 'D'
             #Check if the time range was given. If True, use this to estimate the time array for
             # the Forecast
             if time_list is not None:
                 assert isinstance(time_list, (pd.Series, np.ndarray)), f'Must be np.array or pd.Series with dtype datetime64. {type(time_list)} was given'
                 assert np.issubdtype(time_list.dtype, np.datetime64), f'dtype must be datetime64. {time_list.dtype} was given'
-                time_list = pd.Series(time_list).dt.to_period(freq_output)
+                time_list = pd.Series(time_list).dt.to_period(freq_input)
             else:
                 assert all(isinstance(i,date) for i in [start,end])
-                time_list = pd.period_range(start=start, end=end, freq=freq_output)
+                time_list = pd.period_range(start=start, end=end, freq=freq_input)
 
             time_range = pd.Series(time_list)
             time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()) - self.ti.toordinal()
@@ -182,7 +183,7 @@ class Wor(BaseModel,DCA):
                 assert all(isinstance(i,(int,float)) for i in [start,end])     
                 fq = converter_factor(freq_input,freq_output)
                 assert fq>=1, 'The output frecuency must be greater than input'
-                time_list = np.arange(start, end, int(fq))
+                time_list = np.arange(start, end, 1)
 
             time_array = time_list
             time_range = time_list
@@ -223,22 +224,17 @@ class Wor(BaseModel,DCA):
 
         for i in range(br.shape[0]):
             _wor = bsw_to_wor(_bsw[i])
-            freq_factor = converter_factor('D',freq_input)
-
 
             #The fluid rate is multiplied by a factor to estimate the cumulative production.            
-            _f = wor_forecast(time_array,_fluid[i]*freq_factor, _slope[i], _wor, rate_limit=rate_limit,
+            _f = wor_forecast(time_array,_fluid[i], _slope[i], _wor, rate_limit=rate_limit,
                 cum_limit=cum_limit, wor_limit=wor_limit)
             
-            #Convert the rates in daily 
-            _f[['oil_rate','water_rate']] = _f[['oil_rate','water_rate']]/freq_factor
-
             _f['iteration'] = i
             #_f.index = time_range[1:_f.shape[0]+1]
             _f.index = time_range[0:_f.shape[0]]
 
-            _f['oil_volume'] = np.diff(_f['oil_cum'].values,prepend=0)
-            _f['water_volume'] = np.diff(_f['water_cum'].values,prepend=0)
+            _f['oil_volume'] = np.gradient(_f['oil_cum'].values)
+            _f['water_volume'] = np.gradient(_f['water_cum'].values)
  
 
             #Gas Rate
@@ -252,13 +248,40 @@ class Wor(BaseModel,DCA):
                     _f['gas_cum'] = _f['oil_cum'].add(_f['water_cum']).multiply(self.glr) 
                     _f['gas_volume'] = np.diff(_f['gas_cum'], prepend=0) / _f['delta_time']
                     _f['gas_rate'] = _f['gas_volume'] / _f['delta_time']
+            else:
+                _f['gas_cum'] = 0
+                _f['gas_volume'] = 0
+                _f['gas_rate'] = 0
 
-
+            
             list_forecast.append(_f)
 
 
         _forecast = pd.concat(list_forecast, axis=0)
         _forecast.index.name = 'date'
+        
+        if self.format() == 'date' and freq_output!='D':
+            _forecast.to_period(freq_output)
+            _forecast.reset_index(inplace=True)
+            _forecast = _forecast.groupby(
+                ['date','iteration']
+            ).agg({
+                'oil_rate':'mean',
+                'water_rate':'mean',
+                'oil_cum':'max',
+                'gas_rate':'mean',
+                'water_cum':'max',
+                'bsw':'mean',
+                'wor':'mean',
+                'wor_1':'mean',
+                'delta_time':'mean',
+                'fluid_rate':'mean',
+                'fluid_cum' : 'max',
+                'gas_cum' : 'max',
+                'oil_volume':'sum',
+                'water_volume':'sum',
+                'gas_volume':'sum'
+            }).reset_index().set_index('date')
 
         return _forecast
 
