@@ -172,7 +172,7 @@ class Wor(BaseModel,DCA):
         filter=None,kw_filter={},prob:bool=False, formula:str = "np.log(wor) ~ cum" ):
         
         #Check inputs
-        time = df[time].values if isinstance(time,str) else time
+        time = df[time].values.astype('datetime64') if isinstance(time,str) else time.astype('datetime64')
         oil = df[oil_rate].values if isinstance(oil_rate,str) else oil_rate 
         water = df[water_rate].values if isinstance(water_rate,str) else water_rate
         
@@ -187,7 +187,7 @@ class Wor(BaseModel,DCA):
         wor = water / oil
         
         #Estimate delta time
-        delta_time = np.gradient(time).astype('timedelta64[D]')
+        delta_time = np.gradient(time).astype('int64')
         
         #volume and cum
         oil_vol = oil * delta_time
@@ -212,15 +212,20 @@ class Wor(BaseModel,DCA):
         oil_cum_filter = oil_cum[total_filter==0]
         wor_filter = wor[total_filter==0]
         data = pd.DataFrame({'cum':oil_cum_filter,'wor':wor_filter})
-        
+
         #Model 
         mod = smf.ols(formula = formula, data = data)
         res = mod.fit()
         
-        self.bsw = {'dist':'norm','kw':{'loc':res.params['Intercept'],'scale':res.bse['Intercept']}} if prob else res.params['Intercept']
+        bsw_mean = wor_to_bsw(np.exp(res.params['Intercept']))
+        
+        # TODO: Check how to convert the standard deviation from the WOR interception to BSW Units
+        bsw_std = wor_to_bsw(res.bse['Intercept'])
+
+        self.bsw = {'dist':'norm','kw':{'loc':bsw_mean,'scale':bsw_std}} if prob else bsw_mean
         self.slope = {'dist':'norm','kw':{'loc':res.params['cum'],'scale':res.bse['cum']}} if prob else res.params['cum']
         self.ti = pd.Timestamp(time[total_filter==0][0]) if isinstance(time[total_filter==0][0],(np.datetime64,date)) else time[total_filter==0][0]
-        
+        self.fluid_rate = np.mean(oil + water)
         return pd.DataFrame({
             'time':time,
             'oil_rate':oil,
@@ -231,7 +236,7 @@ class Wor(BaseModel,DCA):
        
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, 
     	end:Union[date,float]=None, fluid_rate:Union[float,list]=None,rate_limit:float=None,cum_limit:float=None, wor_limit:float=None,
-    	freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None,**kwargs)->pd.DataFrame:
+    	freq_input:str='D', freq_output:str='D', iter:int=1,ppf=None,cum_i=0,**kwargs)->pd.DataFrame:
         if self.format() == 'date':
             freq_input = 'D'
             #Check if the time range was given. If True, use this to estimate the time array for
@@ -276,7 +281,9 @@ class Wor(BaseModel,DCA):
         #
         #If the result is 1D, the length of the vector is the number of iterations will be performed
         #This vector is broadcasted to a 2D array that match the time_array shape
-        fluid_rate = np.atleast_1d(self.fluid_rate)
+        
+        fluid_rate = np.atleast_1d(self.fluid_rate) if fluid_rate is None else np.atleast_1d(fluid_rate)
+        
 
         #Broadcast three variables
         br = np.broadcast_shapes(bsw.shape,slope.shape,fluid_rate.shape[0],time_array.shape[0])
@@ -319,7 +326,7 @@ class Wor(BaseModel,DCA):
 
             _f['oil_volume'] = np.gradient(_f['oil_cum'].values)
             _f['water_volume'] = np.gradient(_f['water_cum'].values)
- 
+            _f['oil_cum'] += cum_i
 
             #Gas Rate
             if any([i is not None for i in [self.gor,self.glr]]):
