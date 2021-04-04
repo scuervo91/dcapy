@@ -235,7 +235,7 @@ class Wor(BaseModel,DCA):
             'filter':total_filter})
        
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, 
-    	end:Union[date,float]=None, fluid_rate:Union[float,list]=None,rate_limit:float=None,cum_limit:float=None, wor_limit:float=None,
+    	end:Union[date,float]=None, fluid_rate:Union[np.ndarray,float,list]=None,rate_limit:float=None,cum_limit:float=None, wor_limit:float=None,
     	freq_input:str='D', freq_output:str='D', iter:int=1,ppf=None,cum_i=0,**kwargs)->pd.DataFrame:
         if self.format() == 'date':
             freq_input = 'D'
@@ -282,7 +282,7 @@ class Wor(BaseModel,DCA):
         #If the result is 1D, the length of the vector is the number of iterations will be performed
         #This vector is broadcasted to a 2D array that match the time_array shape
         
-        fluid_rate = np.atleast_1d(self.fluid_rate) if fluid_rate is None else np.atleast_1d(fluid_rate)
+        fluid_rate = np.atleast_2d(self.fluid_rate) if fluid_rate is None else np.atleast_2d(fluid_rate)
         
 
         #Broadcast three variables
@@ -294,12 +294,10 @@ class Wor(BaseModel,DCA):
         time_array = time_array * np.ones((br[0],1))
 
         # make the fluid array to be consistent with the time array
-        if fluid_rate.ndim == 1:
-            _fluid = fluid_rate.reshape(-1,1) * np.ones((br[0],time_array.shape[1]))
-        else:
-            br2 = np.broadcast_shapes(fluid_rate.shape,time_array)
-            _fluid = fluid_rate * np.ones(br2.shape)
-                
+        _fluid = fluid_rate * np.ones((br[0],time_array.shape[1]))
+
+        
+
         # Make the loop for the forecast
         list_forecast = []
 
