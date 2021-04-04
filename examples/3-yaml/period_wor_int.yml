@@ -1,0 +1,15 @@
+instance: period
+name: pdp 
+dca:
+  ti : 
+    - 0
+    - 5
+  slope : 
+    - 3e-6
+    - 9e-6
+  fluid_rate: 1200
+  bsw: 0.2
+start : 0
+end : 15
+freq_input : D
+freq_output : D

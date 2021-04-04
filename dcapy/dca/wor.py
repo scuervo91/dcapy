@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from typing import Union, List, Optional
 from pydantic import BaseModel, Field
 from scipy import stats
+import statsmodels.formula.api as smf
 
 #Local Imports
 from .dca import DCA, ProbVar
@@ -62,7 +63,7 @@ def wor_forecast(time_array:np.ndarray,fluid_rate:Union[float,np.ndarray], slope
     fluid_cum = np.zeros(time_array.shape[0])
     fluid_cum[0] = fluid_rate[0]*delta_time[0]
 
-    for i in range(1,delta_time.shape[0]-1):
+    for i in range(1,delta_time.shape[0]):
         wor[i] = np.exp(slope*oil_cum[i-1])*wor_i
         wor_1[i] = wor[i] + 1
         bsw[i] = wor_to_bsw(wor[i])
@@ -107,10 +108,10 @@ def wor_forecast(time_array:np.ndarray,fluid_rate:Union[float,np.ndarray], slope
 
 class Wor(BaseModel,DCA):
 
-    bsw: Union[ProbVar,List[float],float] = Field(...)
-    slope: Union[ProbVar,List[float],float] = Field(...)
-    fluid_rate : Union[float,List[float],List[List[float]]] = Field(...)
-    ti: Union[int,date] = Field(...)
+    bsw: Union[ProbVar,List[float],float] = Field(None)
+    slope: Union[ProbVar,List[float],float] = Field(None)
+    fluid_rate : Union[float,List[float],List[List[float]]] = Field(None)
+    ti: Union[int,date,List[int],List[date]] = Field(None)
     seed : Optional[int] = Field(None)
     gor: Optional[Union[float,List[float]]] = Field(None)
     glr: Optional[Union[float,List[float]]] = Field(None)
@@ -149,16 +150,88 @@ class Wor(BaseModel,DCA):
         else:
             return np.atleast_1d(self.slope)
 
-    def format(self):
+    def format(self)->str:
+        """format return the time format the instance is initialized
+
+        Returns:
+            str: number or date
+        """
         if isinstance(self.ti,date):
             return 'date'
-        else:
+        elif isinstance(self.ti,int):
             return 'number'
+        elif isinstance(self.ti,list):
+            if isinstance(self.ti[0],date):
+                return 'date'
+            else:
+                return 'number'
+            
+    def fit(self, df:pd.DataFrame=None,time:Union[str,np.ndarray,pd.Series]=None, 
+        oil_rate:Union[str,np.ndarray,pd.Series]=None,
+        water_rate:Union[str,np.ndarray,pd.Series]=None,
+        filter=None,kw_filter={},prob:bool=False, formula:str = "np.log(wor) ~ cum" ):
+        
+        #Check inputs
+        time = df[time].values if isinstance(time,str) else time
+        oil = df[oil_rate].values if isinstance(oil_rate,str) else oil_rate 
+        water = df[water_rate].values if isinstance(water_rate,str) else water_rate
+        
+        #Keep production greater than 0
+        oil_filter_array,water_filter_array  = np.zeros(oil.shape), np.zeros(water.shape)
+        oil_filter_array[oil<=0] == 1
+        water_filter_array[water<=0] == 1
+        
+        oil_water_filter = oil_filter_array + water_filter_array
+        
+        #Calculate WOR
+        wor = water / oil
+        
+        #Estimate delta time
+        delta_time = np.gradient(time).astype('timedelta64[D]')
+        
+        #volume and cum
+        oil_vol = oil * delta_time
+        oil_cum = np.cumsum(oil_vol)
+        
+        #Apply filter 
+        anomaly_filter_array = np.zeros(oil_cum.shape)
+        if filter is not None:
+            if callable(filter):
+                anomaly_array = filter(oil_cum[oil_water_filter==0],wor[oil_water_filter==0],**kw_filter)
+            elif isinstance(filter,str):
+                anomaly_array = eval(f'{filter}(oil_cum[oil_water_filter==0],wor[oil_water_filter==0],**kw_filter)')
 
+            #Rebuild the full anomaly array with the original input shape
+            anomaly_filter_array[oil_water_filter==0] = anomaly_array
+        
+        #total filter
+        total_filter = oil_water_filter + anomaly_filter_array
+        
+        # Regression
+        
+        oil_cum_filter = oil_cum[total_filter==0]
+        wor_filter = wor[total_filter==0]
+        data = pd.DataFrame({'cum':oil_cum_filter,'wor':wor_filter})
+        
+        #Model 
+        mod = smf.ols(formula = formula, data = data)
+        res = mod.fit()
+        
+        self.bsw = {'dist':'norm','kw':{'loc':res.params['Intercept'],'scale':res.bse['Intercept']}} if prob else res.params['Intercept']
+        self.slope = {'dist':'norm','kw':{'loc':res.params['cum'],'scale':res.bse['cum']}} if prob else res.params['cum']
+        self.ti = pd.Timestamp(time[total_filter==0][0]) if isinstance(time[total_filter==0][0],(np.datetime64,date)) else time[total_filter==0][0]
+        
+        return pd.DataFrame({
+            'time':time,
+            'oil_rate':oil,
+            'water_rate':water,
+            'wor':wor,
+            'oil_cum':oil_cum,
+            'filter':total_filter})
+       
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, 
     	end:Union[date,float]=None, fluid_rate:Union[float,list]=None,rate_limit:float=None,cum_limit:float=None, wor_limit:float=None,
     	freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None,**kwargs)->pd.DataFrame:
-
         if self.format() == 'date':
             freq_input = 'D'
             #Check if the time range was given. If True, use this to estimate the time array for
@@ -171,9 +244,9 @@ class Wor(BaseModel,DCA):
                 assert all(isinstance(i,date) for i in [start,end])
                 time_list = pd.period_range(start=start, end=end, freq=freq_input)
 
+            ti_array = np.array([i.toordinal() for i in np.atleast_1d(self.ti)], dtype=int)
             time_range = pd.Series(time_list)
-            time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()) - self.ti.toordinal()
-            time_array = time_array.values
+            time_array = time_range.apply(lambda x: x.to_timestamp().toordinal()).values - ti_array.reshape(-1,1)
         else:
             if time_list is not None:
                 time_list = np.atleast_1d(time_list)
@@ -185,9 +258,10 @@ class Wor(BaseModel,DCA):
                 assert fq>=1, 'The output frecuency must be greater than input'
                 time_list = np.arange(start, end, 1)
 
-            time_array = time_list
+            ti_array = np.atleast_1d(self.ti).astype(int)
+            
+            time_array = time_list - ti_array.reshape(-1,1)
             time_range = time_list
-
 
 
        	#Broadcast variables to set the total iterations
@@ -205,33 +279,43 @@ class Wor(BaseModel,DCA):
         fluid_rate = np.atleast_1d(self.fluid_rate)
 
         #Broadcast three variables
-        br = np.broadcast(bsw,slope,np.zeros(fluid_rate.shape[0]))
+        br = np.broadcast_shapes(bsw.shape,slope.shape,fluid_rate.shape[0],time_array.shape[0])
         
         #Convert varibles into broadcast shape
-        _bsw = bsw * np.ones(br.shape)
-        _slope = slope * np.ones(br.shape)
+        _bsw = bsw * np.ones(br)
+        _slope = slope * np.ones(br)
+        time_array = time_array * np.ones((br[0],1))
 
         # make the fluid array to be consistent with the time array
         if fluid_rate.ndim == 1:
-            _fluid = fluid_rate.reshape(-1,1) * np.ones((br.shape[0],time_array.shape[0]))
+            _fluid = fluid_rate.reshape(-1,1) * np.ones((br[0],time_array.shape[1]))
         else:
-            br2 = np.broadcast(np.zeros(fluid_rate.shape[1]),time_array)
+            br2 = np.broadcast_shapes(fluid_rate.shape,time_array)
             _fluid = fluid_rate * np.ones(br2.shape)
-
-
+                
         # Make the loop for the forecast
         list_forecast = []
 
-        for i in range(br.shape[0]):
+        for i in range(br[0]):
             _wor = bsw_to_wor(_bsw[i])
+            
+            #Get only the time array values greater or equal to zero
+            filter_time = time_array[i]>=0
 
             #The fluid rate is multiplied by a factor to estimate the cumulative production.            
-            _f = wor_forecast(time_array,_fluid[i], _slope[i], _wor, rate_limit=rate_limit,
-                cum_limit=cum_limit, wor_limit=wor_limit)
+            _f = wor_forecast(
+                time_array[i][filter_time],
+                _fluid[i][filter_time], 
+                _slope[i], 
+                _wor, 
+                rate_limit=rate_limit,
+                cum_limit=cum_limit, 
+                wor_limit=wor_limit)
             
             _f['iteration'] = i
             #_f.index = time_range[1:_f.shape[0]+1]
-            _f.index = time_range[0:_f.shape[0]]
+            _f.index = time_range[filter_time][0:_f.shape[0]]
+            #_f.index = time_range[0:_f.shape[0]]
 
             _f['oil_volume'] = np.gradient(_f['oil_cum'].values)
             _f['water_volume'] = np.gradient(_f['water_cum'].values)
@@ -255,7 +339,6 @@ class Wor(BaseModel,DCA):
 
             
             list_forecast.append(_f)
-
 
         _forecast = pd.concat(list_forecast, axis=0)
         _forecast.index.name = 'date'
@@ -284,13 +367,3 @@ class Wor(BaseModel,DCA):
             }).reset_index().set_index('date')
 
         return _forecast
-
-
-
-
-
-
-
-
-
-

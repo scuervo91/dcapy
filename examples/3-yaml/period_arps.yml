@@ -2,12 +2,12 @@ instance: period
 name: pdp 
 dca:
   ti : 2021-01-01
-  di : 0.3
+  di : 
+    - 0.3
+    - 0.4
   freq_di : A
   qi :
     - 80
-    - 100 
-    - 1000
   b : 0
   fluid_rate: 1200
 start : 2021-01-01

@@ -1,0 +1,33 @@
+instance: scenario
+name: scenario1
+periods:
+  - name: pdp
+    dca:
+      ti: 2021-01-01
+      slope:
+        - 3e-6
+        - 4e-6
+        - 5e-6
+      gor: 0.25 
+      fluid_rate: 4000
+      bsw: 0.8
+    freq_input: D 
+    freq_output: D 
+    start: 2020-01-01
+    end: 2030-01-01
+    rate_limit: 300
+  - name: pud
+    dca:
+      ti: 2021-01-01
+      slope: 1e-6
+      gor: 0.25 
+      fluid_rate: 4000
+      bsw: 0.5
+    freq_input: D 
+    freq_output: D 
+    start: 2020-01-01
+    end: 2030-01-01
+    rate_limit: 300
+    depends:
+      period : pdp
+freq_output: D 
