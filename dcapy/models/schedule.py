@@ -399,14 +399,14 @@ class Well(BaseModel):
   
 		for s in _scenarios:
 			periods = scenarios[s.name] if isinstance(scenarios,dict) else None
-			_f = _scenarios[s].generate_forecast(periods = periods, freq_output=freq_output, iter=iter)
+			_f = s.generate_forecast(periods = periods, freq_output=freq_output, iter=iter)
 
 			list_forecast.append(_f)
    
 		well_forecast = pd.concat(list_forecast, axis=0)
 		well_forecast['well'] = self.name
 
-		if _scenarios.periods[0].dca.format()=='number':
+		if _scenarios[0].periods[0].dca.format()=='number':
 			self.forecast = Forecast(freq=freq_output,**well_forecast.reset_index().to_dict(orient='list'))
 		else:
 			self.forecast = Forecast(freq=freq_output,**well_forecast.to_timestamp().reset_index().to_dict(orient='list'))
@@ -426,19 +426,19 @@ class WellsGroup(BaseModel):
 			wells_list = wells if isinstance(wells,list) else list(wells.keys())
 			_wells = [i for i in self.wells if i.name in wells_list]
 		else:
-			_wells = self.scenarios
+			_wells = self.wells
    
 		list_forecast = []
   
 		for w in _wells:
 			scenarios = wells[w.name] if isinstance(wells,dict) else None
-			_f = _wells[w].generate_forecast(scenarios = scenarios, freq_output=freq_output, iter=iter)
+			_f = w.generate_forecast(scenarios = scenarios, freq_output=freq_output, iter=iter)
 
 			list_forecast.append(_f)
    
 		wells_forecast = pd.concat(list_forecast, axis=0)
 
-		if _wells.schedule.periods[0].dca.format()=='number':
+		if _wells[0].scenarios[0].periods[0].dca.format()=='number':
 			self.forecast = Forecast(freq=freq_output,**wells_forecast.reset_index().to_dict(orient='list'))
 		else:
 			self.forecast = Forecast(freq=freq_output,**wells_forecast.to_timestamp().reset_index().to_dict(orient='list'))
