@@ -381,7 +381,7 @@ class Scenario(BaseModel):
 
 class Well(BaseModel):
 	name : str 
-	schedule : List[Scenario]
+	scenarios : List[Scenario]
 	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
 	cashflow : Optional[List[CashFlowModel]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
@@ -391,9 +391,9 @@ class Well(BaseModel):
 		#Make filter
 		if scenarios:
 			scenarios_list = scenarios if isinstance(scenarios,list) else list(scenarios.keys())
-			_scenarios = [i for i in self.schedule if i.name in scenarios_list]
+			_scenarios = [i for i in self.scenarios if i.name in scenarios_list]
 		else:
-			_scenarios = self.schedule
+			_scenarios = self.scenarios
    
 		list_forecast = []
   
@@ -426,7 +426,7 @@ class WellsGroup(BaseModel):
 			wells_list = wells if isinstance(wells,list) else list(wells.keys())
 			_wells = [i for i in self.wells if i.name in wells_list]
 		else:
-			_wells = self.schedule
+			_wells = self.scenarios
    
 		list_forecast = []
   
