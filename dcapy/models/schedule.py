@@ -31,8 +31,8 @@ class Period(BaseModel):
 	start: Union[int,date]
 	end: Optional[Union[int,date]]
 	time_list : Optional[List[Union[int,date]]] = Field(None)
-	freq_input: Literal['M','D','A'] = Field('M')
-	freq_output: Literal['M','D','A'] = Field('M')
+	freq_input: Literal['M','D','A'] = Field('D')
+	freq_output: Literal['M','D','A'] = Field('D')
 	rate_limit: Optional[float] = Field(None, ge=0)
 	cum_limit: Optional[float] = Field(None, ge=0)
 	iter : int = Field(1, ge=1)
@@ -227,20 +227,21 @@ class Period(BaseModel):
      
 class Scenario(BaseModel):
 	name : str
-	periods: List[Period]
+	periods: Dict[str,Period]
 	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
 	cashflow : Optional[List[CashFlowModel]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
-
+	freq_output: str = Field('D')
+ 
 	@validator('periods', always=True)
 	def match_periods_freqs(cls,v):
 		format_list = []
 		for i in v:
-			format_list.append(i.dca.format())
+			format_list.append(v[i].dca.format())
 
 		freq_list = []
 		for i in v:
-			freq_list.append(i.freq_output)
+			freq_list.append(v[i].freq_output)
 
 		if all(i==format_list[0] for i in format_list)&all(i==freq_list[0] for i in freq_list):
 			return v 
@@ -254,36 +255,36 @@ class Scenario(BaseModel):
 
 	def generate_forecast(self, periods:list = None, freq_output=None, iter=None):
 		if freq_output is None:
-			freq_output = self.periods[0].freq_output
+			freq_output = self.freq_output
 		
 		#Make filter
 		if periods:
-			_periods = {i.name:i for i in self.periods if i.name in periods}
+			_periods = [i for i in self.periods if i in periods]
 		else:
-			_periods = {i.name:i for i in self.periods}
+			_periods = list(self.periods.keys())
 
 
 		list_forecast = []
 		list_periods_errors = []
 
 		for p in _periods:
-			if _periods[p].depends:
+			if self.periods[p].depends:
 				#Get the last dates of the forecast present period depends on
-				depend_period = _periods[p].depends.period
-				new_ti = _periods[depend_period].get_end_dates()
+				depend_period = self.periods[p].depends.period
+				new_ti = self.periods[depend_period].get_end_dates()
     
 				# If delay is set. add the time delta
-				if _periods[p].depends.delay:
-					new_ti = [i + _periods[p].depends.delay for i in new_ti]
+				if self.periods[p].depends.delay:
+					new_ti = [i + self.periods[p].depends.delay for i in new_ti]
 
-				_periods[p].dca.ti = new_ti
-			_f = _periods[p].generate_forecast(freq_output=freq_output, iter=iter)
+				self.periods[p].dca.ti = new_ti
+			_f = self.periods[p].generate_forecast(freq_output=freq_output, iter=iter)
 			
 			#try:
-			#	_f = _periods[p].generate_forecast()
+			#	_f = self.periods[p].generate_forecast()
 			#except Exception as e:
 			#	print(e)
-			#	list_periods_errors.append(_periods[p].name)
+			#	listself.periods_errors.append(self.periods[p].name)
 			#else:
 			list_forecast.append(_f)
 
@@ -291,50 +292,53 @@ class Scenario(BaseModel):
 		scenario_forecast = pd.concat(list_forecast, axis=0)
 		scenario_forecast['scenario'] = self.name
 
-		if self.periods[0].dca.format()=='number':
-			self.forecast = Forecast(freq=freq_output,**scenario_forecast.reset_index().to_dict(orient='list'))
-		else:
+		if isinstance(scenario_forecast.index[0],pd.Period):
 			self.forecast = Forecast(freq=freq_output,**scenario_forecast.to_timestamp().reset_index().to_dict(orient='list'))
+		else:
+			self.forecast = Forecast(freq=freq_output,**scenario_forecast.reset_index().to_dict(orient='list'))
 
 		return scenario_forecast
 
 	def _iterations(self,periods:list = None):
 		#Make filter
 		if periods:
-			_periods = [i for i in self.periods if i.name in periods]
+			_periods = [i for i in self.periods if i in periods]
 		else:
-			_periods = self.periods
+			_periods = list(self.periods.keys())
 
 		n = []
 		for i in _periods:
-			n.append(np.array(i.forecast.iteration).max())
+			n.append(np.array(self.periods[i].forecast.iteration).max())
 
 		return np.array(n).max() + 1
 
 
 	def generate_cashflow(self,periods:list = None, freq_output=None):
 		if freq_output is None:
-			freq_output = self.periods[0].freq_output
+			freq_output = self.freq_output
 		#Make filter
 		if periods:
-			_periods = [i for i in self.periods if i.name in periods]
+			_periods = [i for i in self.periods if i in periods]
 		else:
-			_periods = self.periods
+			_periods = list(self.periods.keys())
 
 		n = self._iterations(periods = periods)
 		#print(n)
 
-		cashflow_models = [CashFlowModel(name=self.name) for i in range(n)]
+		cashflow_models = [CashFlowModel(name=f'{self.name}_{i}') for i in range(n)]
 		list_periods_errors = []
 		for p in _periods:
-			if self.cashflow_params:
-				p.cashflow_params = self.cashflow_params
+			if self.periods[p].cashflow_params is None:
+				if self.cashflow_params:
+					self.periods[p].cashflow_params = self.cashflow_params
+				else:
+					continue
 
 			try:
-				_cf = p.generate_cashflow(freq_output=freq_output)
+				_cf = self.periods[p].generate_cashflow(freq_output=freq_output)
 			except Exception as e:
 				print(e)
-				list_periods_errors.append(p.name)
+				list_periods_errors.append(self.periods[p].name)
 			else:
 				if len(_cf)==1:
 					_cf = [_cf[0] for i in range(n)]
@@ -356,11 +360,11 @@ class Scenario(BaseModel):
 			#Example: If the Cashflow is given in monthly basis and the discount
 			#rates was given in Annual basis, then convert the discount rates
 			#to montly by applying: (1+rate)^(0.0833) - 1
-			c = converter_factor(freq,self.periods[0].freq_output)
+			c = converter_factor(freq,self.freq_output)
 			rates = np.power(1 + rates,c) - 1
 			
 			for i,v in enumerate(self.cashflow):
-				npv_i = v.npv(rates,freq_output=self.periods[0].freq_output)
+				npv_i = v.npv(rates,freq_output=self.freq_output)
 				npv_i['iteration'] = i
 				npv_list.append(npv_i)
 
@@ -381,70 +385,124 @@ class Scenario(BaseModel):
 
 class Well(BaseModel):
 	name : str 
-	scenarios : List[Scenario]
+	scenarios : Dict[str,Scenario]
 	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
-	cashflow : Optional[List[CashFlowModel]] = Field(None)
+	cashflow : Optional[Dict[str,List[CashFlowModel]]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
  
+	class Config:
+		arbitrary_types_allowed = True
+		validate_assignment = True
  
 	def generate_forecast(self, scenarios:Union[list,dict] = None, freq_output=None, iter=None):
 		#Make filter
 		if scenarios:
 			scenarios_list = scenarios if isinstance(scenarios,list) else list(scenarios.keys())
-			_scenarios = [i for i in self.scenarios if i.name in scenarios_list]
+			_scenarios = [i for i in self.scenarios if i in scenarios_list]
 		else:
-			_scenarios = self.scenarios
+			_scenarios = list(self.scenarios.keys())
    
 		list_forecast = []
   
 		for s in _scenarios:
-			periods = scenarios[s.name] if isinstance(scenarios,dict) else None
-			_f = s.generate_forecast(periods = periods, freq_output=freq_output, iter=iter)
+			periods = scenarios[s] if isinstance(scenarios,dict) else None
+			_f = self.scenarios[s].generate_forecast(periods = periods, freq_output=freq_output, iter=iter)
 
 			list_forecast.append(_f)
    
 		well_forecast = pd.concat(list_forecast, axis=0)
 		well_forecast['well'] = self.name
-
-		if _scenarios[0].periods[0].dca.format()=='number':
-			self.forecast = Forecast(freq=freq_output,**well_forecast.reset_index().to_dict(orient='list'))
-		else:
+		if isinstance(well_forecast.index[0],pd.Period):
 			self.forecast = Forecast(freq=freq_output,**well_forecast.to_timestamp().reset_index().to_dict(orient='list'))
+		else:
+			self.forecast = Forecast(freq=freq_output,**well_forecast.reset_index().to_dict(orient='list'))
 
 		return well_forecast
+
+	def generate_cashflow(self, scenarios:Union[list,dict] = None, freq_output=None):
+		if scenarios:
+			scenarios_list = scenarios if isinstance(scenarios,list) else list(scenarios.keys())
+			_scenarios = [i for i in self.scenarios if i in scenarios_list]
+		else:
+			_scenarios = list(self.scenarios.keys())
+   
+		dict_cashflows = {}
+
+		for s in _scenarios:
+			if self.scenarios[s].cashflow_params is None:
+				if self.cashflow_params:
+					self.scenarios[s].cashflow_params = self.cashflow_params
+				else:
+					continue
+ 
+			periods = scenarios[s] if isinstance(scenarios,dict) else None
+			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output)
+
+			dict_cashflows.update({s:cash_s})
+   
+		self.cashflow = dict_cashflows 
+
+		return dict_cashflows
    
 class WellsGroup(BaseModel):
 	name : str 
-	wells : List[Well]
+	wells : Dict[str,Well]
 	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
-	cashflow : Optional[List[CashFlowModel]] = Field(None)
+	cashflow : Optional[Dict[str,Dict[str,List[CashFlowModel]]]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
- 
+
+	class Config:
+		arbitrary_types_allowed = True
+		validate_assignment = True
+  
 	def generate_forecast(self, wells:Union[list,dict] = None, freq_output=None, iter=None):
 		#Make filter
 		if wells:
 			wells_list = wells if isinstance(wells,list) else list(wells.keys())
-			_wells = [i for i in self.wells if i.name in wells_list]
+			_wells = [i for i in self.wells if i in wells_list]
 		else:
 			_wells = self.wells
    
 		list_forecast = []
   
 		for w in _wells:
-			scenarios = wells[w.name] if isinstance(wells,dict) else None
-			_f = w.generate_forecast(scenarios = scenarios, freq_output=freq_output, iter=iter)
+			scenarios = wells[w] if isinstance(wells,dict) else None
+			_f = self.wells[w].generate_forecast(scenarios = scenarios, freq_output=freq_output, iter=iter)
 
 			list_forecast.append(_f)
    
 		wells_forecast = pd.concat(list_forecast, axis=0)
-
-		if _wells[0].scenarios[0].periods[0].dca.format()=='number':
-			self.forecast = Forecast(freq=freq_output,**wells_forecast.reset_index().to_dict(orient='list'))
-		else:
+		if isinstance(wells_forecast.index[0],pd.Period):
 			self.forecast = Forecast(freq=freq_output,**wells_forecast.to_timestamp().reset_index().to_dict(orient='list'))
+		else:
+			self.forecast = Forecast(freq=freq_output,**wells_forecast.reset_index().to_dict(orient='list'))
 
 		return wells_forecast
 
+	def generate_cashflow(self, wells:Union[list,dict] = None, freq_output=None):
+		if wells:
+			wells_list = wells if isinstance(wells,list) else list(wells.keys())
+			_wells = [i for i in self.wells if i in wells_list]
+		else:
+			_wells = list(self.wells.keys())
+   
+		dict_cashflows = {}
+
+		for w in _wells:
+			if self.wells[w].cashflow_params is None:
+				if self.cashflow_params:
+					self.wells[w].cashflow_params = self.cashflow_params
+				else:
+					continue
+ 
+			scenarios = wells[w] if isinstance(wells,dict) else None
+			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output)
+
+			dict_cashflows.update({w:cash_s})
+   
+		self.cashflow = dict_cashflows 
+
+		return dict_cashflows
 
 def model_from_dict(d:dict):
     
