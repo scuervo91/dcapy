@@ -443,7 +443,7 @@ class Arps(BaseModel,DCA):
         
         qi = self.get_qi(size=iter, ppf=ppf)
         di = self.get_di(size=iter, ppf=ppf)*di_factor
-        b = self.get_b(size=iter, ppf=ppf)
+        b = self.get_b(size=iter, ppf=ppf).round(decimals=2)
         
         
         iter = np.array([i.shape[0] for i in [qi,di,b,ti_delta]]).max()

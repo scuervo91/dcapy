@@ -40,8 +40,8 @@ def zscore(x:np.ndarray,y:np.ndarray,thld:float=2)->np.ndarray:
     logy = np.log(y)
     
     #Derivative
-    dev = np.diff(logy) / np.diff(x)
-    dev = np.append(dev[0],dev)
+    dev = np.gradient(logy) / np.gradient(x)
+    #dev = np.append(dev[0],dev)
     #Estimate z Score
     abs_zscore=np.abs(stats.zscore(dev))
     
