@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd 
 from datetime import date, timedelta
 from typing import Union, List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Extra
 from scipy import stats
 import statsmodels.formula.api as smf
 
@@ -119,6 +119,8 @@ class Wor(BaseModel,DCA):
 
     class Config:
         arbitrary_types_allowed = True
+        validate_assignment = True
+        extra = Extra.forbid
 
     def get_bsw(self,size=None, ppf=None):
         """get_bsw get the number of bsw

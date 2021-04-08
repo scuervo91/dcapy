@@ -8,7 +8,7 @@ from scipy.optimize import curve_fit
 from scipy import stats
 import matplotlib.pyplot as plt
 import seaborn as sns
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Extra
 from typing import Union, List, Optional
 #Local Imports
 from .dca import DCA, ProbVar
@@ -277,7 +277,7 @@ class Arps(BaseModel,DCA):
     class Config:
         arbitrary_types_allowed = True
         validate_assignment = True
-
+        extra = Extra.forbid
     #####################################################
     ############## Properties ###########################
     

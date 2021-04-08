@@ -13,7 +13,7 @@ from .cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts
 # the input dca is a subclass of DCA. 
 # Still I don't know if there's a way Pydantic check if a input variable is subclass of other class
 #Example.  Check y Arps is subclass of DCA
-union_classes_dca = Union[Wor,Arps]
+union_classes_dca = Union[Arps,Wor]
 
 freq_format={
     'M':'%Y-%m',
