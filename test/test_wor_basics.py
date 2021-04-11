@@ -56,18 +56,18 @@ class TestArpsBasic(unittest.TestCase):
             'cashflow_params':[
                     {
                         'name':'fix_opex',
-                        'const_value':-5000,
+                        'value':-5000,
                         'target':'opex',
                     },
                     {
                         'name':'var_opex',
-                        'const_value':-5,
+                        'value':-5,
                         'target':'opex',
                         'multiply':'oil_volume'
                     },
                     {
                         'name':'income',
-                        'const_value':60,
+                        'value':60,
                         'target':'income',
                         'multiply':'oil_volume'
                     }
