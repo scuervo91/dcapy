@@ -2,17 +2,23 @@
 import numpy as np 
 import pandas as pd
 from scipy import stats
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Extra
 from typing import List, Union, Optional, Literal
-
+from datetime import date
 #Local Imports
 from ..dca import list_freq, converter_factor, ProbVar
+#from ..models import ChgPts
 
 class Weiner(BaseModel):
     initial_condition:  Union[float,List[float]] = Field(0)
     generator: ProbVar = Field(ProbVar())
     freq: Literal['M','D','A'] = Field('M')
     drift : float = Field(0)
+
+    class Config:
+        arbitrary_types_allowed = True
+        validate_assignment = True
+        extra = Extra.forbid
     
     def weiner_generator(self,steps:int,processes:int,interval=None, seed=None):
         for i in [steps,processes]:
@@ -87,14 +93,3 @@ class Weiner(BaseModel):
                 w[n,t] = w[n,t-1]*np.exp(drift + (epsilon[n,t]*np.sqrt(dt)))
                 
         return pd.DataFrame(w.T, index=range(steps),columns=range(processes))
-        
-        
-        
-        
-        
-        
-        
-    
-        
-     
-     

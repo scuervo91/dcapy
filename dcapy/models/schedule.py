@@ -227,7 +227,7 @@ class Period(BaseModel):
      
 class Scenario(BaseModel):
 	name : str
-	periods: Dict[str,Period]
+	periods: Union[List[Period],Dict[str,Period]]
 	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
 	cashflow : Optional[List[CashFlowModel]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
@@ -235,6 +235,8 @@ class Scenario(BaseModel):
  
 	@validator('periods', always=True)
 	def match_periods_freqs(cls,v):
+		if isinstance(v,list):
+			v = {i.name:i for i in v}
 		format_list = []
 		for i in v:
 			format_list.append(v[i].dca.format())
@@ -385,7 +387,7 @@ class Scenario(BaseModel):
 
 class Well(BaseModel):
 	name : str 
-	scenarios : Dict[str,Scenario]
+	scenarios : Union[List[Scenario],Dict[str,Scenario]]
 	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
 	cashflow : Optional[Dict[str,List[CashFlowModel]]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
@@ -393,7 +395,22 @@ class Well(BaseModel):
 	class Config:
 		arbitrary_types_allowed = True
 		validate_assignment = True
- 
+
+	@validator('scenarios', always=True)
+	def match_periods_freqs(cls,v):
+		if isinstance(v,list):
+			v = {i.name:i for i in v}
+		format_list = []
+		freq_list = []
+		for i in v:
+			for j in i:
+				format_list.append(i[j].dca.format())
+				freq_list.append(i[j].freq_output)
+
+		if all(i==format_list[0] for i in format_list)&all(i==freq_list[0] for i in freq_list):
+			return v 
+		raise ValueError(f'The format of the periods are different {format_list}')
+
 	def generate_forecast(self, scenarios:Union[list,dict] = None, freq_output=None, iter=None):
 		#Make filter
 		if scenarios:
@@ -446,7 +463,7 @@ class Well(BaseModel):
    
 class WellsGroup(BaseModel):
 	name : str 
-	wells : Dict[str,Well]
+	wells : Union[List[Well],Dict[str,Well]]
 	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
 	cashflow : Optional[Dict[str,Dict[str,List[CashFlowModel]]]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
@@ -454,7 +471,24 @@ class WellsGroup(BaseModel):
 	class Config:
 		arbitrary_types_allowed = True
 		validate_assignment = True
-  
+
+	@validator('wells', always=True)
+	def match_periods_freqs(cls,v):
+		if isinstance(v,list):
+			v = {i.name:i for i in v}
+		format_list = []
+		freq_list = []
+		for i in v:
+			for j in i:
+				for k in j:
+					format_list.append(j[k].dca.format())
+					freq_list.append(j[k].freq_output)
+
+		if all(i==format_list[0] for i in format_list)&all(i==freq_list[0] for i in freq_list):
+			return v 
+		raise ValueError(f'The format of the periods are different {format_list}')
+
+
 	def generate_forecast(self, wells:Union[list,dict] = None, freq_output=None, iter=None):
 		#Make filter
 		if wells:

@@ -1,3 +1,4 @@
+from dcapy.dca.dca import ProbVar
 from pydantic import BaseModel, Field, validator
 from typing import Union, List, Optional, Literal
 from datetime import date
@@ -6,6 +7,7 @@ import numpy as np
 import numpy_financial as npf
 
 from ..dca import converter_factor
+from ..weiner import Weiner
 
 
 freq_format={
@@ -97,16 +99,36 @@ class CashFlow(BaseModel):
 class CashFlowParams(BaseModel):
     name : str = Field(...)
     iter: int = Field(1,ge=1) 
-    const_value : Optional[float] = Field(None)
+    const_value : Optional[Union[ProbVar,List[float],float]] = Field(None)
+    wi : Union[ProbVar,List[float],float] = Field(1)
     periods : Optional[int] = Field(None, gt=0)
-    array_values : Optional[ChgPts] = Field(None)
+    array_values : Optional[Union[Weiner,List[ChgPts],ChgPts]] = Field(None)
     target : Literal['income','opex','capex'] = Field(...)
     multiply : Optional[str] = Field(None)
     agg : Literal['sum','mean'] = Field('sum')
-    wi : float = Field(1,ge=0,le=1)
     depends: bool = Field(False)
 
-     
+    @validator('iter')
+    def check_list_length(cls,v,values):
+        check_names = ['const_value','wi','array_values']
+        for i in check_names:
+            if isinstance(values[i], list):
+                assert len(values[i]) == v
+        return v
+    """
+    def gbm_gen(self,start:Union[date,int],steps:int, freq_output='D',interval=None, seed=None):        
+
+        if isinstance(start,date):
+            pr = pd.period_range(start=start,periods=steps,freq=freq_output)
+            idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in pr]
+        else:
+            idx = np.arange(0,steps,1).tolist()
+            
+        while True:
+            df = self.geometric_brownian_motion(steps=steps, processes=1,freq_output=freq_output,interval=interval,seed=seed)
+            
+            yield ChgPts(date=idx, value=df.iloc[:,0].values.tolist())
+        """
 class CashFlowModel(BaseModel):
     name : str
     income : Optional[List[CashFlow]]
