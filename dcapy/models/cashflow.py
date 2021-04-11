@@ -98,37 +98,51 @@ class CashFlow(BaseModel):
 
 class CashFlowParams(BaseModel):
     name : str = Field(...)
-    iter: int = Field(1,ge=1) 
     const_value : Optional[Union[ProbVar,List[float],float]] = Field(None)
-    wi : Union[ProbVar,List[float],float] = Field(1)
+    wi : Union[ProbVar,List[float],float,List[ChgPts],ChgPts,Weiner] = Field(1.)
     periods : Optional[int] = Field(None, gt=0)
+    value : Union[ProbVar,List[float],float,List[ChgPts],ChgPts,Weiner] = Field(...)
     array_values : Optional[Union[Weiner,List[ChgPts],ChgPts]] = Field(None)
     target : Literal['income','opex','capex'] = Field(...)
     multiply : Optional[str] = Field(None)
     agg : Literal['sum','mean'] = Field('sum')
     depends: bool = Field(False)
+    iter: int = Field(1,ge=1) 
 
-    @validator('iter')
+    @validator('iter', always=True)
     def check_list_length(cls,v,values):
-        check_names = ['const_value','wi','array_values']
+        check_names = ['value','wi']
         for i in check_names:
             if isinstance(values[i], list):
-                assert len(values[i]) == v
+                v = len(values[i])
+                #assert len(values[i]) == v
         return v
-    """
-    def gbm_gen(self,start:Union[date,int],steps:int, freq_output='D',interval=None, seed=None):        
+    
+    def get_value(self,i:int, seed:int=None,steps:int=None, freq_output:str=None, interval:float=None):
+        if isinstance(self.value,(ChgPts,float)):
+            return self.value 
+        if isinstance(self.value,list):
+            return self.value[i]
+        if isinstance(self.value,ProbVar):
+            return self.value.get_sample(size=1, seed=seed)
+        if isinstance(self.value,Weiner):
+            df = self.value.geometric_brownian_motion(steps,1,freq_output=freq_output,interval=interval,seed=seed)
+            idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in df.index]
+            return ChgPts(date=idx, value=df.iloc[:,0].values.tolist())
 
-        if isinstance(start,date):
-            pr = pd.period_range(start=start,periods=steps,freq=freq_output)
-            idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in pr]
-        else:
-            idx = np.arange(0,steps,1).tolist()
-            
-        while True:
-            df = self.geometric_brownian_motion(steps=steps, processes=1,freq_output=freq_output,interval=interval,seed=seed)
-            
-            yield ChgPts(date=idx, value=df.iloc[:,0].values.tolist())
-        """
+    def get_wi(self,i:int, seed:int=None,steps:int=None, freq_output:str=None, interval:float=None):
+        if isinstance(self.wi,(ChgPts,float)):
+            return self.wi 
+        if isinstance(self.wi,list):
+            return self.wi[i]
+        if isinstance(self.wi,ProbVar):
+            return self.wi.get_sample(size=1, seed=seed)
+        if isinstance(self.wi,Weiner):
+            df = self.wi.geometric_brownian_motion(steps,1,freq_output=freq_output,interval=interval,seed=seed)
+            idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in df.index]
+            return ChgPts(date=idx, value=df.iloc[:,0].values.tolist())
+        
+
 class CashFlowModel(BaseModel):
     name : str
     income : Optional[List[CashFlow]]

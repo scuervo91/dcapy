@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, Extra
 import pandas as pd
 from typing import List, Optional,Literal, Union, Dict
 from datetime import date
@@ -106,6 +106,10 @@ class ProbVar(BaseModel):
     dist: str = Field('norm')
     kw : dict = Field({'loc':0,'scale':1})
     seed : int = Field(None)
+
+    class Config:
+        validate_assignment = True
+        extra = Extra.forbid
 
     @validator('kw')
     def check_dist_build(cls,v,values):

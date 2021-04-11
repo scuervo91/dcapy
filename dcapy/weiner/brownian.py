@@ -11,8 +11,9 @@ from ..dca import list_freq, converter_factor, ProbVar
 
 class Weiner(BaseModel):
     initial_condition:  Union[float,List[float]] = Field(0)
+    ti: Union[int,date] = Field(0)
     generator: ProbVar = Field(ProbVar())
-    freq: Literal['M','D','A'] = Field('M')
+    freq: Literal['M','D','A'] = Field('D')
     drift : float = Field(0)
 
     class Config:
@@ -39,6 +40,14 @@ class Weiner(BaseModel):
             ppf=None
                 
         return self.generator.get_sample(size=size, seed=seed, ppf=ppf)     
+    
+    def get_index_array(self, steps:int, freq_output:str):
+
+        if isinstance(self.ti,date):
+            return pd.period_range(start=self.ti,periods=steps,freq=freq_output)
+            #idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in pr]
+        else:
+            return np.arange(0,steps,1).tolist()
 
     def brownian_motion(self,steps,processes, freq_output='D',interval=None, seed=None):
         
@@ -62,8 +71,10 @@ class Weiner(BaseModel):
         for n in range(processes):
             for t in range(1,steps):
                 w[n,t] = w[n,t-1] + mu + (epsilon[n,t]*np.sqrt(dt))
-                
-        return pd.DataFrame(w.T, index=range(steps),columns=range(processes))
+        
+        idx = self.get_index_array(steps,freq_output)
+        
+        return pd.DataFrame(w.T, index=idx,columns=range(processes))
     
     def geometric_brownian_motion(self,steps,processes, freq_output='D',interval=None, seed=None):
 
@@ -91,5 +102,7 @@ class Weiner(BaseModel):
         for n in range(processes):
             for t in range(1,steps):
                 w[n,t] = w[n,t-1]*np.exp(drift + (epsilon[n,t]*np.sqrt(dt)))
-                
-        return pd.DataFrame(w.T, index=range(steps),columns=range(processes))
+        
+        idx = self.get_index_array(steps,freq_output)
+        
+        return pd.DataFrame(w.T, index=idx,columns=range(processes))

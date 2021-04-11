@@ -106,11 +106,36 @@ class Period(BaseModel):
 			#Format date
 
 			list_cashflow_model = []
+   
+			#Broadcast the number of iterations between the forecast and the cashflows to be consistent.
+			#Example: If the Forecast have 10 iterations the cashflow params must have either 10 or 1 iterations.
+   
+			shapes_to_broadcast = []
+   
+			#forecast iterations
+			forecast_iterations = _forecast['iteration'].unique()
+			shapes_to_broadcast.append(len(forecast_iterations))
 
+			#Cashflows Iterations
+			for p in self.cashflow_params:
+				shapes_to_broadcast.append(p.iter)
+    
+			#shapes broadcast
+			shapes = np.broadcast_shapes(*shapes_to_broadcast)
+		
+			#Forecast iterations shape.
+			#Example. If there's only one iteration in Forecast 
+			# the variable forecast_iterations would be = np.array([0]). 
+			# At the same time if the broadcasted shape is (10,) due to 10 iterations in cashflows params
+			# the iterate_new_shape would be np.array([0,0,0,0,0,0,0,0,0,0]). 
+			# This is done to make the 10 different cashflow models.
+			iterate_new_shape = forecast_iterations * np.ones(shapes)
+   
 			#Iterate over list of cases
-			for i in _forecast['iteration'].unique():
+			#for i in _forecast['iteration'].unique():
+			for i in range(shapes[0]):
 
-				_forecast_i = _forecast[_forecast['iteration']==i]
+				_forecast_i = _forecast[_forecast['iteration']==iterate_new_shape[i]]
 
 				cashflow_model_dict = {'name':self.name + '_' + str(i)}
 				for param in self.cashflow_params:
@@ -128,8 +153,16 @@ class Period(BaseModel):
 						'end':_forecast_i.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.max(),
 						'freq_output':freq_output,'freq_input':self.freq_input
 					})
-
-
+					p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
+					steps = len(p_range)
+					param_value = param.get_value(i,freq_output=freq_output,steps=steps)
+					print(param_value)
+					param_wi = param.get_wi(i,freq_output=freq_output,steps=steps)
+					if isinstance(param_wi,ChgPts):
+						idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else param.array_values.date
+						values_series_wi = pd.Series(param_wi.value, index=idx)
+					else:
+						values_series_wi = param_wi
 					if param.multiply:
 						#Forecast Column name to multiply the param
 
@@ -140,19 +173,13 @@ class Period(BaseModel):
 							print(f'{param.multiply} is not in forecast columns. {_forecast_i.columns}')
 							continue
 
-
-						if param.const_value:
-							_const_value = _forecast_i[multiply_col].multiply(param.const_value).multiply(param.wi)
-							cashflow_dict.update({'const_value':_const_value.tolist()})
-
-						if param.array_values:
-
+						if isinstance(param_value,ChgPts):
 							#If the array values date is a datetime.date convert to output frecuency
 							#to be consistent with the freq of the forecast when multiply
-							idx = pd.to_datetime(param.array_values.date).to_period(freq_output) if is_date_mode  else param.array_values.date
-							values_series = pd.Series(param.array_values.value, index=idx)
-
-							_array_values = _forecast_i[multiply_col].multiply(values_series).multiply(param.wi).dropna()
+							idx = pd.to_datetime(param_value.date).to_period(freq_output) if is_date_mode  else param_value.date
+							values_series = pd.Series(param_value.value, index=idx)
+							
+							_array_values = _forecast_i[multiply_col].multiply(values_series).multiply(values_series_wi).dropna()
 
 							if _array_values.empty:
 								print(f'param {param.name} array values not multiplied with forecast. There is no index match')
@@ -163,18 +190,24 @@ class Period(BaseModel):
 										'value':_array_values.tolist()
 									}
 								})
+						else:         
+							_const_value = _forecast_i[multiply_col].multiply(param_value).multiply(values_series_wi)
+							cashflow_dict.update({'const_value':_const_value.tolist()})
 
 					else:
-						if param.const_value:
+						if isinstance(param_value,ChgPts):
+							idx = pd.to_datetime(param_value.date).to_period(freq_output) if is_date_mode  else param_value.date
+							values_series = pd.Series(param_value.value, index=idx)
+
+							_array_values = values_series.multiply(values_series_wi).dropna()
 							cashflow_dict.update({
-								'const_value':param.const_value * param.wi,
+								'chgpts': ChgPts(date = _array_values.index.strftime('%Y-%m-%d').tolist(), value = _array_values.tolist())
+							})
+						else:
+							cashflow_dict.update({
+								'const_value':param_value * values_series_wi,
 								'periods':param.periods
 							})
-						if param.array_values:
-							cashflow_dict.update({
-								'chgpts': ChgPts(date = param.array_values.date, value = param.array_values.value*param.wi)
-							})
-
 
 					cashflow_model_dict[param.target].append(cashflow_dict)
 
