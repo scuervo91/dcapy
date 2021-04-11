@@ -156,7 +156,6 @@ class Period(BaseModel):
 					p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 					steps = len(p_range)
 					param_value = param.get_value(i,freq_output=freq_output,steps=steps)
-					print(param_value)
 					param_wi = param.get_wi(i,freq_output=freq_output,steps=steps)
 					if isinstance(param_wi,ChgPts):
 						idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else param.array_values.date
