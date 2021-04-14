@@ -28,3 +28,8 @@ $ pip install dcapy
 ---> 100%
 ```
 </div>
+
+
+## License
+
+This project is licensed under the terms of the MIT license.
