@@ -435,9 +435,9 @@ class Well(BaseModel):
 		format_list = []
 		freq_list = []
 		for i in v:
-			for j in i:
-				format_list.append(i[j].dca.format())
-				freq_list.append(i[j].freq_output)
+			for j in v[i].periods:
+				format_list.append(v[i].periods[j].dca.format())
+				freq_list.append(v[i].periods[j].freq_output)
 
 		if all(i==format_list[0] for i in format_list)&all(i==freq_list[0] for i in freq_list):
 			return v 
@@ -511,10 +511,10 @@ class WellsGroup(BaseModel):
 		format_list = []
 		freq_list = []
 		for i in v:
-			for j in i:
-				for k in j:
-					format_list.append(j[k].dca.format())
-					freq_list.append(j[k].freq_output)
+			for j in v[i].scenarios:
+				for k in v[i].scenarios[j].periods:
+					format_list.append(v[i].scenarios[j].periods[k].dca.format())
+					freq_list.append(v[i].scenarios[j].periods[k].freq_output)
 
 		if all(i==format_list[0] for i in format_list)&all(i==freq_list[0] for i in freq_list):
 			return v 

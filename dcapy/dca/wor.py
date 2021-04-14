@@ -323,9 +323,12 @@ class Wor(BaseModel,DCA):
             #_f.index = time_range[1:_f.shape[0]+1]
             _f.index = time_range[filter_time][0:_f.shape[0]]
             #_f.index = time_range[0:_f.shape[0]]
-
-            _f['oil_volume'] = np.gradient(_f['oil_cum'].values)
-            _f['water_volume'] = np.gradient(_f['water_cum'].values)
+            oil_vol = np.gradient(_f['oil_cum'].values)
+            oil_vol[oil_vol<0] = 0
+            water_vol = np.gradient(_f['water_cum'].values)
+            water_vol[water_vol<0] = 0
+            _f['oil_volume'] = oil_vol
+            _f['water_volume'] = water_vol
             _f['oil_cum'] += cum_i
 
             #Gas Rate
