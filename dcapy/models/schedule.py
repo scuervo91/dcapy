@@ -225,7 +225,7 @@ class Period(BaseModel):
 		else:
 			raise ValueError('Either Forecast or Cashflow Params not defined')
 
-	def npv(self,rates, freq:str='A'):
+	def npv(self,rates, freq_rate='A',freq_cashflow='M'):
      
 		if self.cashflow is not None:
 			npv_list = []
@@ -235,11 +235,11 @@ class Period(BaseModel):
 			#Example: If the Cashflow is given in monthly basis and the discount
 			#rates was given in Annual basis, then convert the discount rates
 			#to montly by applying: (1+rate)^(0.0833) - 1
-			c = converter_factor(freq,self.freq_output)
+			c = converter_factor(freq_rate,freq_cashflow)
 			rates = np.power(1 + rates,c) - 1
 			
 			for i,v in enumerate(self.cashflow):
-				npv_i = v.npv(rates,freq_output=self.freq_output)
+				npv_i = v.npv(rates,freq_output=freq_cashflow)
 				npv_i['iteration'] = i
 				npv_list.append(npv_i)
 
@@ -384,7 +384,7 @@ class Scenario(BaseModel):
 
 		return cashflow_models
 
-	def npv(self,rates, freq='A'):
+	def npv(self,rates, freq_rate='A',freq_cashflow='M'):
      
 		if self.cashflow is not None:
 			npv_list = []
@@ -394,11 +394,11 @@ class Scenario(BaseModel):
 			#Example: If the Cashflow is given in monthly basis and the discount
 			#rates was given in Annual basis, then convert the discount rates
 			#to montly by applying: (1+rate)^(0.0833) - 1
-			c = converter_factor(freq,self.freq_output)
+			c = converter_factor(freq_rate,freq_cashflow)
 			rates = np.power(1 + rates,c) - 1
-			
+
 			for i,v in enumerate(self.cashflow):
-				npv_i = v.npv(rates,freq_output=self.freq_output)
+				npv_i = v.npv(rates,freq_output=freq_cashflow)
 				npv_i['iteration'] = i
 				npv_list.append(npv_i)
 
@@ -481,8 +481,6 @@ class Well(BaseModel):
 			if self.scenarios[s].cashflow_params is None:
 				if self.cashflow_params:
 					self.scenarios[s].cashflow_params = self.cashflow_params
-				else:
-					continue
  
 			periods = scenarios[s] if isinstance(scenarios,dict) else None
 			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output)
@@ -558,9 +556,7 @@ class WellsGroup(BaseModel):
 			if self.wells[w].cashflow_params is None:
 				if self.cashflow_params:
 					self.wells[w].cashflow_params = self.cashflow_params
-				else:
-					continue
- 
+
 			scenarios = wells[w] if isinstance(wells,dict) else None
 			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output)
 
