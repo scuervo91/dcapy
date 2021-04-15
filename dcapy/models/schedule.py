@@ -362,11 +362,12 @@ class Scenario(BaseModel):
 		cashflow_models = [CashFlowModel(name=f'{self.name}_{i}') for i in range(n)]
 		list_periods_errors = []
 		for p in _periods:
-			if self.periods[p].cashflow_params is None:
-				if self.cashflow_params:
+			#if self.periods[p].cashflow_params is None:
+			if self.cashflow_params:
+				if self.periods[p].cashflow_params is None:
 					self.periods[p].cashflow_params = self.cashflow_params
 				else:
-					continue
+					self.periods[p].cashflow_params.extend(self.cashflow_params)
 
 			try:
 				_cf = self.periods[p].generate_cashflow(freq_output=freq_output)
@@ -376,7 +377,7 @@ class Scenario(BaseModel):
 			else:
 				if len(_cf)==1:
 					_cf = [_cf[0] for i in range(n)]
-
+			
 				for i in range(n):
 					cashflow_models[i].append(_cf[i])
 
@@ -478,9 +479,11 @@ class Well(BaseModel):
 		dict_cashflows = {}
 
 		for s in _scenarios:
-			if self.scenarios[s].cashflow_params is None:
-				if self.cashflow_params:
+			if self.cashflow_params:
+				if self.scenarios[s].cashflow_params is None:
 					self.scenarios[s].cashflow_params = self.cashflow_params
+				else:
+					self.scenarios[s].cashflow_params.append(self.cashflow_params)
  
 			periods = scenarios[s] if isinstance(scenarios,dict) else None
 			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output)
@@ -553,9 +556,11 @@ class WellsGroup(BaseModel):
 		dict_cashflows = {}
 
 		for w in _wells:
-			if self.wells[w].cashflow_params is None:
-				if self.cashflow_params:
+			if self.cashflow_params:
+				if self.wells[w].cashflow_params is None:
 					self.wells[w].cashflow_params = self.cashflow_params
+				else:
+					self.wells[w].cashflow_params.extend(self.cashflow_params)
 
 			scenarios = wells[w] if isinstance(wells,dict) else None
 			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output)
