@@ -105,6 +105,7 @@ allowed_prob_dist.extend(dist_continu)
 class ProbVar(BaseModel):
     dist: str = Field('norm')
     kw : dict = Field({'loc':0,'scale':1})
+    factor: float = Field(1.)
     seed : int = Field(None)
 
     class Config:
@@ -126,8 +127,8 @@ class ProbVar(BaseModel):
             seed = self.seed
 
         if size:
-            return getattr(stats,self.dist)(**self.kw).rvs(size=size,random_state=seed)
+            return getattr(stats,self.dist)(**self.kw).rvs(size=size,random_state=seed)*self.factor
         elif ppf is not None:
-            return getattr(stats,self.dist)(**self.kw).ppf(ppf)
+            return getattr(stats,self.dist)(**self.kw).ppf(ppf)*self.factor
         else:
-            return getattr(stats,self.dist)(**self.kw).mean()
+            return getattr(stats,self.dist)(**self.kw).mean()*self.factor

@@ -25,8 +25,50 @@ class Depends(BaseModel):
     period : str = Field(...)
     delay : Union[timedelta,int] = Field(None)
   
-class Period(BaseModel):
-	name : str
+    
+class ScheduleBase(BaseModel):
+	name:str
+	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
+	cashflow : Optional[List[CashFlowModel]] = Field(None)
+	forecast: Optional[Forecast] = Field(None)
+ 
+	class Config:
+		arbitrary_types_allowed = True
+		validate_assignment = True
+  
+	def npv(self,rates, freq_rate='A',freq_cashflow='M'):
+     
+		if self.cashflow is not None:
+			npv_list = []
+			rates = np.atleast_1d(rates)
+
+			#Convert the Frequency of the rates to the cashflow frequency
+			#Example: If the Cashflow is given in monthly basis and the discount
+			#rates was given in Annual basis, then convert the discount rates
+			#to montly by applying: (1+rate)^(0.0833) - 1
+			c = converter_factor(freq_rate,freq_cashflow)
+			rates = np.power(1 + rates,c) - 1
+			
+			for i,v in enumerate(self.cashflow):
+				npv_i = v.npv(rates,freq_output=freq_cashflow)
+				npv_i['iteration'] = i
+				npv_list.append(npv_i)
+
+			return pd.concat(npv_list,axis=0)
+
+		else:
+			raise ValueError('Cashflow has not been defined')
+  
+	def irr(self, freq_output:str='A'):
+		irr_list = []
+		for i,v in enumerate(self.cashflow):
+			irr_i = v.irr(freq_output=freq_output)
+			irr_list.append(irr_i)
+
+
+		return pd.DataFrame({'irr':irr_list})
+  
+class Period(ScheduleBase):
 	dca : union_classes_dca 
 	start: Union[int,date]
 	end: Optional[Union[int,date]]
@@ -37,10 +79,8 @@ class Period(BaseModel):
 	cum_limit: Optional[float] = Field(None, ge=0)
 	iter : int = Field(1, ge=1)
 	ppf : Optional[float] = Field(None, ge=0, le=1)
-	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
-	cashflow : Optional[List[CashFlowModel]] = Field(None)
 	depends: Optional[Depends] = Field(None)
-	forecast: Optional[Forecast] = Field(None)
+
 
 	@validator('end')
 	def start_end_match_type(cls,v,values):
@@ -224,45 +264,9 @@ class Period(BaseModel):
 			return list_cashflow_model
 		else:
 			raise ValueError('Either Forecast or Cashflow Params not defined')
-
-	def npv(self,rates, freq_rate='A',freq_cashflow='M'):
-     
-		if self.cashflow is not None:
-			npv_list = []
-			rates = np.atleast_1d(rates)
-
-			#Convert the Frequency of the rates to the cashflow frequency
-			#Example: If the Cashflow is given in monthly basis and the discount
-			#rates was given in Annual basis, then convert the discount rates
-			#to montly by applying: (1+rate)^(0.0833) - 1
-			c = converter_factor(freq_rate,freq_cashflow)
-			rates = np.power(1 + rates,c) - 1
-			
-			for i,v in enumerate(self.cashflow):
-				npv_i = v.npv(rates,freq_output=freq_cashflow)
-				npv_i['iteration'] = i
-				npv_list.append(npv_i)
-
-			return pd.concat(npv_list,axis=0)
-
-		else:
-			raise ValueError('Cashflow has not been defined')
-  
-	def irr(self, freq_output:str='A'):
-		irr_list = []
-		for i,v in enumerate(self.cashflow):
-			irr_i = v.irr(freq_output=freq_output)
-			irr_list.append(irr_i)
-
-
-		return pd.DataFrame({'irr':irr_list})
-     
-class Scenario(BaseModel):
-	name : str
+    
+class Scenario(ScheduleBase):
 	periods: Union[List[Period],Dict[str,Period]]
-	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
-	cashflow : Optional[List[CashFlowModel]] = Field(None)
-	forecast: Optional[Forecast] = Field(None)
 	freq_output: str = Field('D')
  
 	@validator('periods', always=True)
@@ -385,45 +389,9 @@ class Scenario(BaseModel):
 
 		return cashflow_models
 
-	def npv(self,rates, freq_rate='A',freq_cashflow='M'):
-     
-		if self.cashflow is not None:
-			npv_list = []
-			rates = np.atleast_1d(rates)
 
-			#Convert the Frequency of the rates to the cashflow frequency
-			#Example: If the Cashflow is given in monthly basis and the discount
-			#rates was given in Annual basis, then convert the discount rates
-			#to montly by applying: (1+rate)^(0.0833) - 1
-			c = converter_factor(freq_rate,freq_cashflow)
-			rates = np.power(1 + rates,c) - 1
-
-			for i,v in enumerate(self.cashflow):
-				npv_i = v.npv(rates,freq_output=freq_cashflow)
-				npv_i['iteration'] = i
-				npv_list.append(npv_i)
-
-			return pd.concat(npv_list,axis=0)
-
-		else:
-			raise ValueError('Cashflow has not been defined')
-
-	def irr(self, freq_output:str='A'):
-		irr_list = []
-		for i,v in enumerate(self.cashflow):
-			irr_i = v.irr(freq_output=freq_output)
-			irr_list.append(irr_i)
-
-
-		return pd.DataFrame({'irr':irr_list})
-
-
-class Well(BaseModel):
-	name : str 
+class Well(ScheduleBase):
 	scenarios : Union[List[Scenario],Dict[str,Scenario]]
-	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
-	cashflow : Optional[Dict[str,List[CashFlowModel]]] = Field(None)
-	forecast: Optional[Forecast] = Field(None)
  
 	class Config:
 		arbitrary_types_allowed = True
@@ -476,7 +444,7 @@ class Well(BaseModel):
 		else:
 			_scenarios = list(self.scenarios.keys())
    
-		dict_cashflows = {}
+		list_cashflows = []
 
 		for s in _scenarios:
 			if self.cashflow_params:
@@ -488,18 +456,14 @@ class Well(BaseModel):
 			periods = scenarios[s] if isinstance(scenarios,dict) else None
 			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output)
 
-			dict_cashflows.update({s:cash_s})
+			list_cashflows.extend(cash_s)
    
-		self.cashflow = dict_cashflows 
+		self.cashflow = list_cashflows
 
-		return dict_cashflows
+		return list_cashflows
    
-class WellsGroup(BaseModel):
-	name : str 
+class WellsGroup(ScheduleBase):
 	wells : Union[List[Well],Dict[str,Well]]
-	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
-	cashflow : Optional[Dict[str,Dict[str,List[CashFlowModel]]]] = Field(None)
-	forecast: Optional[Forecast] = Field(None)
 
 	class Config:
 		arbitrary_types_allowed = True
@@ -553,8 +517,8 @@ class WellsGroup(BaseModel):
 		else:
 			_wells = list(self.wells.keys())
    
-		dict_cashflows = {}
-
+		list_cashflows = []
+		len_cashflows = []
 		for w in _wells:
 			if self.cashflow_params:
 				if self.wells[w].cashflow_params is None:
@@ -565,11 +529,23 @@ class WellsGroup(BaseModel):
 			scenarios = wells[w] if isinstance(wells,dict) else None
 			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output)
 
-			dict_cashflows.update({w:cash_s})
+			len_cashflows.append(len(cash_s))
    
-		self.cashflow = dict_cashflows 
+			list_cashflows.append(cash_s)
 
-		return dict_cashflows
+		broadcast_shape = np.broadcast_shapes(*len_cashflows)[0]
+
+		list_cashflows_merged = [CashFlowModel(name=f'{self.name}_{i}') for i in range(broadcast_shape)]
+		for ch in list_cashflows:
+			if len(ch)==1:
+				ch = [ch[0] for i in range(broadcast_shape)]
+
+			for i in range(broadcast_shape):
+				list_cashflows_merged[i].append(ch[i])  
+   
+		self.cashflow = list_cashflows_merged
+
+		return list_cashflows_merged
 
 	def scenarios_maker(self,wells:Union[list,dict]=None, reduce:int=1):
 		if wells:
@@ -600,11 +576,6 @@ class WellsGroup(BaseModel):
 
 		return scenarios_list
    
-
-
-     
-
-
 def model_from_dict(d:dict):
     
     instance = d.pop('instance')
