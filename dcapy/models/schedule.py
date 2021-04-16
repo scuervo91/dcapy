@@ -7,7 +7,7 @@ import numpy as np
 import pyDOE2 as ed
 #Local Imports
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
-from .cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts
+from .cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
 
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
 # the input dca is a subclass of DCA. 
@@ -39,34 +39,13 @@ class ScheduleBase(BaseModel):
 	def npv(self,rates, freq_rate='A',freq_cashflow='M'):
      
 		if self.cashflow is not None:
-			npv_list = []
-			rates = np.atleast_1d(rates)
-
-			#Convert the Frequency of the rates to the cashflow frequency
-			#Example: If the Cashflow is given in monthly basis and the discount
-			#rates was given in Annual basis, then convert the discount rates
-			#to montly by applying: (1+rate)^(0.0833) - 1
-			c = converter_factor(freq_rate,freq_cashflow)
-			rates = np.power(1 + rates,c) - 1
-			
-			for i,v in enumerate(self.cashflow):
-				npv_i = v.npv(rates,freq_output=freq_cashflow)
-				npv_i['iteration'] = i
-				npv_list.append(npv_i)
-
-			return pd.concat(npv_list,axis=0)
+			return npv_cashflows(self.cashflow, rates,freq_rate,freq_cashflow)
 
 		else:
 			raise ValueError('Cashflow has not been defined')
   
 	def irr(self, freq_output:str='A'):
-		irr_list = []
-		for i,v in enumerate(self.cashflow):
-			irr_i = v.irr(freq_output=freq_output)
-			irr_list.append(irr_i)
-
-
-		return pd.DataFrame({'irr':irr_list})
+		return irr_cashflows(self.cashflow, freq_output)
   
 class Period(ScheduleBase):
 	dca : union_classes_dca 

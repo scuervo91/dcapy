@@ -242,8 +242,34 @@ class CashFlowModel(BaseModel):
         return pd.DataFrame({'npv':npv_list}, index=rates)
 
 
+def npv_cashflows(list_cashflows:list,rates, freq_rate:str,freq_cashflow:str):
+    
+    npv_list = []
+    rates = np.atleast_1d(rates)
+
+    #Convert the Frequency of the rates to the cashflow frequency
+    #Example: If the Cashflow is given in monthly basis and the discount
+    #rates was given in Annual basis, then convert the discount rates
+    #to montly by applying: (1+rate)^(0.0833) - 1
+    c = converter_factor(freq_rate,freq_cashflow)
+    rates = np.power(1 + rates,c) - 1
+
+    for i,v in enumerate(list_cashflows):
+        npv_i = v.npv(rates,freq_output=freq_cashflow)
+        npv_i['iteration'] = i
+        npv_list.append(npv_i)
+
+    return pd.concat(npv_list,axis=0)
+
+def irr_cashflows(list_cashflows, freq_output):
+		irr_list = []
+		for i,v in enumerate(list_cashflows):
+			irr_i = v.irr(freq_output=freq_output)
+			irr_list.append(irr_i)
 
 
+		return pd.DataFrame({'irr':irr_list})
+    
 
 
 
