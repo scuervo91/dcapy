@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, validator
 from datetime import date, timedelta
 import pandas as pd
 import numpy as np
-
+import pyDOE2 as ed
 #Local Imports
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
 from .cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts
@@ -288,8 +288,8 @@ class Scenario(BaseModel):
 	# TODO: Make validation for all periods are in the same time basis (Integers or date)
 
 	def generate_forecast(self, periods:list = None, freq_output=None, iter=None):
-		if freq_output is None:
-			freq_output = self.freq_output
+		#if freq_output is None:
+		#	freq_output = self.freq_output
 		
 		#Make filter
 		if periods:
@@ -570,6 +570,40 @@ class WellsGroup(BaseModel):
 		self.cashflow = dict_cashflows 
 
 		return dict_cashflows
+
+	def scenarios_maker(self,wells:Union[list,dict]=None, reduce:int=1):
+		if wells:
+			wells_list = wells if isinstance(wells,list) else list(wells.keys())
+			_wells = [i for i in self.wells if i in wells_list]
+		else:
+			_wells = list(self.wells.keys())
+   
+		levels = []
+		wells_dict = {}
+		for w in _wells:
+			if isinstance(wells,dict):
+				list_scenarios = [i for i in list(self.wells[w].scenarios.keys()) if i in wells[w]]
+			else:
+				list_scenarios = list(self.wells[w].scenarios.keys())
+   
+			levels.append(len(list_scenarios))
+			wells_dict.update({w:list_scenarios})
+
+		# Escenarios Array
+		escenarios_array = ed.fullfact(levels) if reduce==1 else ed.gsd(levels,reduce)
+  
+		scenarios_list = []
+		for escenario in escenarios_array:
+			esc = {_wells[i]:[wells_dict[_wells[i]][int(v)]] for i,v in enumerate(escenario)}
+
+			scenarios_list.append(esc)
+
+		return scenarios_list
+   
+
+
+     
+
 
 def model_from_dict(d:dict):
     
