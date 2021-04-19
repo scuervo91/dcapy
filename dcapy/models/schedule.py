@@ -5,6 +5,8 @@ from datetime import date, timedelta
 import pandas as pd
 import numpy as np
 import pyDOE2 as ed
+import yaml
+import json
 #Local Imports
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
 from .cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
@@ -46,6 +48,13 @@ class ScheduleBase(BaseModel):
   
 	def irr(self, freq_output:str='A'):
 		return irr_cashflows(self.cashflow, freq_output)
+
+	def to_file(self, file:str, format='yaml'):
+		with open(f'{file}.{format}','w') as f:
+			if format=='yaml':
+				yaml.safe_dump(json.loads(self.json(exclude_unset=True)), f)
+			if format=='json':
+				f.write(self.json(exclude_unset=True))
   
 class Period(ScheduleBase):
 	dca : union_classes_dca 
