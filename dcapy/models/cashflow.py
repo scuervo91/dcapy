@@ -33,7 +33,7 @@ class CashFlow(BaseModel):
     const_value : Union[float,List[float]] = Field(0)
     start : Union[int,date] = Field(...)
     end : Union[int,date] = Field(...)
-    periods : Optional[int] = Field(None, gt=0)
+    periods : Optional[int] = Field(None, ge=-1)
     freq_output: Literal['M','D','A'] = Field('M')
     freq_input: Literal['M','D','A'] = Field('M')
     chgpts: Optional[ChgPts] = Field(None)
@@ -65,7 +65,10 @@ class CashFlow(BaseModel):
         if isinstance(self.const_value, list):
             periods = len(self.const_value)
         if self.periods:
-            prng = pd.period_range(start=self.start, periods=self.periods, freq=self.freq_output) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
+            if self.periods < 0: # When the cashflow is at the end when abandoning a well
+                prng = pd.period_range(start=self.end, periods=abs(self.periods), freq=self.freq_output) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
+            else:   
+                prng = pd.period_range(start=self.start, periods=self.periods, freq=self.freq_output) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
         else:
             prng = pd.period_range(start=self.start, end=self.end, periods=self.periods, freq=self.freq_output) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
         periods = len(prng)
