@@ -566,13 +566,11 @@ class WellsGroup(ScheduleBase):
    
 def model_from_dict(d:dict):
     
-    instance = d.pop('instance')
-    
-    if instance == 'period':
+    if 'dca' in d.keys():
         return Period(**d)
-    if instance == 'scenario':
+    if 'periods' in d.keys():
         return Scenario(**d)
-    if instance == 'well':
+    if 'scenarios' in d.keys():
         return Well(**d)
-    if instance == 'wells-group':
+    if 'wells' in d.keys():
         return WellsGroup(**d)
