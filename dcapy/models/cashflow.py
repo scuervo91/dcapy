@@ -276,7 +276,17 @@ class CashFlowModel(BaseModel):
 
         return fcf_df.fillna(0)
     
-    def plot(self, freq_output=None, ax=None, cum=False,bar_kw={}):
+    def get_cashflow_period(self, freq_output=None):
+        cashflows = self.get_cashflows(freq_output=freq_output).reset_index()
+        cashflows['index'] = cashflows['index'].astype('str')
+
+        gr_cash = cashflows.groupby(['index','cash']).sum().reset_index()
+        gr_fcf = pd.DataFrame(cashflows.groupby(['index'])['value'].sum().reset_index())
+        gr_fcf['cash'] = 'fcf'
+        
+        return pd.concat([gr_cash,gr_fcf],axis=0)
+    
+    def plot(self, freq_output=None, ax=None, cum=False,bar_kw={}, format='k',fmt='${:,.0f}'):
 
         def_bar_kw = {
         'palette': {
@@ -289,22 +299,35 @@ class CashFlowModel(BaseModel):
         for (k,v) in def_bar_kw.items():
             if k not in bar_kw:
                 bar_kw[k]=v
+                
+        format_dict = {
+            'k':{
+                'factor':1e3,
+                'title':'Thousands'
+            },
+            'm':{
+                'factor':1e6,
+                'title':'Millions'
+            }
+        }
 
-        cashflows = self.get_cashflows(freq_output=freq_output).reset_index()
-        cashflows['index'] = cashflows['index'].astype('str')
-
-        gr_cash = cashflows.groupby(['index','cash']).sum().reset_index()
-        gr_fcf = pd.DataFrame(cashflows.groupby(['index'])['value'].sum().reset_index())
-        gr_fcf['cash'] = 'fcf'
+        cashflows = self.get_cashflow_period(freq_output=freq_output)
+        
         #Create the Axex
         grax= ax or plt.gca()
-        sns.barplot(data=pd.concat([gr_cash,gr_fcf],axis=0), x='index', y='value', hue='cash',ax=grax,**def_bar_kw)
+        sns.barplot(data=cashflows, x='index', y='value', hue='cash',ax=grax,**def_bar_kw)
 
+        ticks = grax.get_yticks() 
+        grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
+        grax.set_ylabel(f"Cashflows [{format_dict[format]['title']}]")
+        
         if cum:
             spax=grax.twinx()
-            gr_cum = gr_fcf['value'].cumsum()
+            gr_cum = cashflows.loc[cashflows['cash']=='fcf','value'].cumsum() #gr_fcf['value'].cumsum()
             sns.lineplot(data=gr_cum,ax=spax)
-            
+            ticks_cum = spax.get_yticks() 
+            spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
+            spax.set_ylabel(f"Cumulative Cashflows [{format_dict[format]['title']}]")
 
     def irr(self,freq_output=None):
 
