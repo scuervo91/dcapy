@@ -191,7 +191,7 @@ class Period(ScheduleBase):
 					param_wi = param.get_wi(i,freq_output=freq_output,steps=steps)
 					if isinstance(param_wi,ChgPts):
 						idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else param.array_values.date
-						values_series_wi = pd.Series(param_wi.value, index=idx)
+						values_series_wi = pd.Series(param_wi.value, index=idx_wi)
 					else:
 						values_series_wi = param_wi
 					if param.multiply:
@@ -360,10 +360,18 @@ class Scenario(ScheduleBase):
 		for p in _periods:
 			#if self.periods[p].cashflow_params is None:
 			if self.cashflow_params:
+				pass_cashflow_params = []     #Cashflow to pass to periods
+				general_cashflow_params = []   #General cashflow for scenario
+				for i in self.cashflow_params:
+					if i.general:
+						general_cashflow_params.append(i)
+					else:
+						pass_cashflow_params.append(i)
+				
 				if self.periods[p].cashflow_params is None:
-					self.periods[p].cashflow_params = self.cashflow_params
+					self.periods[p].cashflow_params = pass_cashflow_params
 				else:
-					self.periods[p].cashflow_params.extend(self.cashflow_params)
+					self.periods[p].cashflow_params.extend(pass_cashflow_params)
 
 			try:
 				if add_name is None:
@@ -380,6 +388,57 @@ class Scenario(ScheduleBase):
 			
 				for i in range(n):
 					cashflow_models[i].append(_cf[i])
+     
+		#add scenario cashflow that is not attached to periods
+		if len(general_cashflow_params)>0:
+			_forecast = self.forecast.df()
+			is_date_mode = False if isinstance(_forecast.index[0],int) else True
+			cashflow_model_dict = {'name':self.name + '_genral'}
+			for gparam in general_cashflow_params:
+				if gparam.target not in cashflow_model_dict.keys():
+					cashflow_model_dict[gparam.target] = []
+				cashflow_dict = {}
+				cashflow_dict.update({
+					'name':gparam.name,
+					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
+					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
+					'freq_output':freq_output
+				})
+				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
+				steps = len(p_range)
+				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps)
+				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps)
+				if isinstance(param_wi,ChgPts):
+					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
+					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
+				else:
+					values_series_wi = param_wi
+
+				if isinstance(param_value,ChgPts):
+					idx = pd.to_datetime(param_value.date).to_period(freq_output) if is_date_mode  else param_value.date
+					values_series = pd.Series(param_value.value, index=idx)
+
+					_array_values = values_series.multiply(values_series_wi).dropna()
+					cashflow_dict.update({
+						'chgpts': ChgPts(date = _array_values.index.strftime('%Y-%m-%d').tolist(), value = _array_values.tolist())
+					})
+				else:
+					cashflow_dict.update({
+						'const_value':param_value * values_series_wi,
+						'periods':gparam.periods
+					})
+
+				cashflow_model_dict[gparam.target].append(cashflow_dict)
+    
+			for key in cashflow_model_dict:
+				if len(cashflow_model_dict[key]) == 0:
+					del cashflow_model_dict[key]
+			
+			cashflow_model_gen = CashFlowModel(**cashflow_model_dict)
+
+			for c in cashflow_models:
+				c.append(cashflow_model_gen)
+
 
 		self.cashflow = cashflow_models
 
@@ -444,10 +503,17 @@ class Well(ScheduleBase):
 
 		for s in _scenarios:
 			if self.cashflow_params:
+				pass_cashflow_params = []     #Cashflow to pass to periods
+				general_cashflow_params = []   #General cashflow for scenario
+				for i in self.cashflow_params:
+					if i.general:
+						general_cashflow_params.append(i)
+					else:
+						pass_cashflow_params.append(i)      
 				if self.scenarios[s].cashflow_params is None:
-					self.scenarios[s].cashflow_params = self.cashflow_params
+					self.scenarios[s].cashflow_params = pass_cashflow_params
 				else:
-					self.scenarios[s].cashflow_params.append(self.cashflow_params)
+					self.scenarios[s].cashflow_params.append(pass_cashflow_params)
 			if add_name is None:
 				csh_name = self.name
 			else:
@@ -456,6 +522,56 @@ class Well(ScheduleBase):
 			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output, add_name=csh_name)
 
 			list_cashflows.extend(cash_s)
+
+		#add scenario cashflow that is not attached to periods
+		if len(general_cashflow_params)>0:
+			_forecast = self.forecast.df()
+			is_date_mode = False if isinstance(_forecast.index[0],int) else True
+			cashflow_model_dict = {'name':self.name + '_genral'}
+			for gparam in general_cashflow_params:
+				if gparam.target not in cashflow_model_dict.keys():
+					cashflow_model_dict[gparam.target] = []
+				cashflow_dict = {}
+				cashflow_dict.update({
+					'name':gparam.name,
+					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
+					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
+					'freq_output':freq_output
+				})
+				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
+				steps = len(p_range)
+				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps)
+				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps)
+				if isinstance(param_wi,ChgPts):
+					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
+					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
+				else:
+					values_series_wi = param_wi
+
+				if isinstance(param_value,ChgPts):
+					idx = pd.to_datetime(param_value.date).to_period(freq_output) if is_date_mode  else param_value.date
+					values_series = pd.Series(param_value.value, index=idx)
+
+					_array_values = values_series.multiply(values_series_wi).dropna()
+					cashflow_dict.update({
+						'chgpts': ChgPts(date = _array_values.index.strftime('%Y-%m-%d').tolist(), value = _array_values.tolist())
+					})
+				else:
+					cashflow_dict.update({
+						'const_value':param_value * values_series_wi,
+						'periods':gparam.periods
+					})
+
+				cashflow_model_dict[gparam.target].append(cashflow_dict)
+    
+			for key in cashflow_model_dict:
+				if len(cashflow_model_dict[key]) == 0:
+					del cashflow_model_dict[key]
+			
+			cashflow_model_gen = CashFlowModel(**cashflow_model_dict)
+
+			for c in list_cashflows:
+				c.append(cashflow_model_gen)
    
 		self.cashflow = list_cashflows
 
@@ -520,10 +636,17 @@ class WellsGroup(ScheduleBase):
 		len_cashflows = []
 		for w in _wells:
 			if self.cashflow_params:
+				pass_cashflow_params = []     #Cashflow to pass to periods
+				general_cashflow_params = []   #General cashflow for scenario
+				for i in self.cashflow_params:
+					if i.general:
+						general_cashflow_params.append(i)
+					else:
+						pass_cashflow_params.append(i)   
 				if self.wells[w].cashflow_params is None:
-					self.wells[w].cashflow_params = self.cashflow_params
+					self.wells[w].cashflow_params = pass_cashflow_params
 				else:
-					self.wells[w].cashflow_params.extend(self.cashflow_params)
+					self.wells[w].cashflow_params.extend(pass_cashflow_params)
 			if add_name is None:
 				csh_name = self.name
 			else:
@@ -544,6 +667,56 @@ class WellsGroup(ScheduleBase):
 
 			for i in range(broadcast_shape):
 				list_cashflows_merged[i].append(ch[i])  
+
+		#add scenario cashflow that is not attached to periods
+		if len(general_cashflow_params)>0:
+			_forecast = self.forecast.df()
+			is_date_mode = False if isinstance(_forecast.index[0],int) else True
+			cashflow_model_dict = {'name':self.name + '_genral'}
+			for gparam in general_cashflow_params:
+				if gparam.target not in cashflow_model_dict.keys():
+					cashflow_model_dict[gparam.target] = []
+				cashflow_dict = {}
+				cashflow_dict.update({
+					'name':gparam.name,
+					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
+					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
+					'freq_output':freq_output
+				})
+				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
+				steps = len(p_range)
+				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps)
+				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps)
+				if isinstance(param_wi,ChgPts):
+					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
+					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
+				else:
+					values_series_wi = param_wi
+
+				if isinstance(param_value,ChgPts):
+					idx = pd.to_datetime(param_value.date).to_period(freq_output) if is_date_mode  else param_value.date
+					values_series = pd.Series(param_value.value, index=idx)
+
+					_array_values = values_series.multiply(values_series_wi).dropna()
+					cashflow_dict.update({
+						'chgpts': ChgPts(date = _array_values.index.strftime('%Y-%m-%d').tolist(), value = _array_values.tolist())
+					})
+				else:
+					cashflow_dict.update({
+						'const_value':param_value * values_series_wi,
+						'periods':gparam.periods
+					})
+
+				cashflow_model_dict[gparam.target].append(cashflow_dict)
+    
+			for key in cashflow_model_dict:
+				if len(cashflow_model_dict[key]) == 0:
+					del cashflow_model_dict[key]
+			
+			cashflow_model_gen = CashFlowModel(**cashflow_model_dict)
+
+			for c in list_cashflows_merged:
+				c.append(cashflow_model_gen)
    
 		self.cashflow = list_cashflows_merged
 

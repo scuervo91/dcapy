@@ -113,6 +113,7 @@ class CashFlowParams(BaseModel):
     agg : Literal['sum','mean'] = Field('sum')
     depends: bool = Field(False)
     iter: int = Field(1,ge=1) 
+    general: bool = Field(False)
 
     @validator('iter', always=True)
     def check_list_length(cls,v,values):
