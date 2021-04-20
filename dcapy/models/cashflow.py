@@ -5,6 +5,8 @@ from datetime import date
 import pandas as pd
 import numpy as np
 import numpy_financial as npf
+import matplotlib.pyplot as plt 
+import seaborn as sns
 
 from ..dca import converter_factor
 from ..weiner import Weiner
@@ -223,7 +225,86 @@ class CashFlowModel(BaseModel):
 
         fcf_df['cum_fcf'] = fcf_df['fcf'].cumsum()
 
-        return fcf_df
+        return fcf_df.fillna(0)
+    
+    def get_cashflows(self, freq_output=None):
+        list_df = []
+        if self.income:
+            list_income = []
+            for i in self.income:
+                income_cash = i.get_cashflow(freq_output=freq_output)
+                income_cash.name = 'value'
+                income_cashdf = pd.DataFrame(income_cash)
+                income_cashdf['desc'] = i.name
+                income_cashdf['cash'] = 'income'
+                list_income.append(income_cashdf)
+
+            income_df = pd.concat(list_income, axis=0)
+            #income_df['total_income'] = income_df.sum(axis=1)
+            list_df.append(income_df)
+
+        if self.opex:
+            list_opex = []
+            for i in self.opex:
+                opex_cash = i.get_cashflow(freq_output=freq_output)
+                opex_cash.name = 'value'
+                opex_cashdf = pd.DataFrame(opex_cash)
+                opex_cashdf['desc'] = i.name
+                opex_cashdf['cash'] = 'opex'
+                list_opex.append(opex_cashdf)
+
+            opex_df = pd.concat(list_opex, axis=0)
+            #opex_df['total_opex'] = opex_df.sum(axis=1)
+            list_df.append(opex_df)
+
+        if self.capex:
+            list_capex = []
+            for i in self.capex:
+                capex_cash = i.get_cashflow(freq_output=freq_output)
+                capex_cash.name = 'value'
+                capex_cashdf = pd.DataFrame(capex_cash)
+                capex_cashdf['desc'] = i.name
+                capex_cashdf['cash'] = 'capex'
+                list_capex.append(capex_cashdf)
+
+            capex_df = pd.concat(list_capex, axis=0)
+            #capex_df['total_capex'] = capex_df.sum(axis=1)
+            list_df.append(capex_df)
+
+
+        fcf_df = pd.concat(list_df, axis=0)
+
+        return fcf_df.fillna(0)
+    
+    def plot(self, freq_output=None, ax=None, cum=False,bar_kw={}):
+
+        def_bar_kw = {
+        'palette': {
+            'income':'green',
+            'opex':'orange',
+            'capex':'red',
+            'fcf':'gray'
+        }
+        }    
+        for (k,v) in def_bar_kw.items():
+            if k not in bar_kw:
+                bar_kw[k]=v
+
+        cashflows = self.get_cashflows(freq_output=freq_output).reset_index()
+        cashflows['index'] = cashflows['index'].astype('str')
+
+        gr_cash = cashflows.groupby(['index','cash']).sum().reset_index()
+        gr_fcf = pd.DataFrame(cashflows.groupby(['index'])['value'].sum().reset_index())
+        gr_fcf['cash'] = 'fcf'
+        #Create the Axex
+        grax= ax or plt.gca()
+        sns.barplot(data=pd.concat([gr_cash,gr_fcf],axis=0), x='index', y='value', hue='cash',ax=grax,**def_bar_kw)
+
+        if cum:
+            spax=grax.twinx()
+            gr_cum = gr_fcf['value'].cumsum()
+            sns.lineplot(data=gr_cum,ax=spax)
+            
 
     def irr(self,freq_output=None):
 

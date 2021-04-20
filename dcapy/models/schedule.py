@@ -122,7 +122,7 @@ class Period(ScheduleBase):
 				return [i for i in dates_sr]
 		raise ValueError('There is no any Forecast')
 
-	def generate_cashflow(self, freq_output=None):
+	def generate_cashflow(self, freq_output=None, add_name=None):
 		if freq_output is None:
 			freq_output = self.freq_output
    
@@ -173,10 +173,14 @@ class Period(ScheduleBase):
 						cashflow_model_dict[param.target] = []
 
 					cashflow_dict = {}
-
+					
+					if add_name is None:
+						csh_name = self.name
+					else:
+						csh_name = add_name + '-' + self.name
 					#set the name
 					cashflow_dict.update({
-						'name':param.name,
+						'name':f'{param.name}_{csh_name}',
 						'start':_forecast_i.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.min(),
 						'end':_forecast_i.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.max(),
 						'freq_output':freq_output,'freq_input':self.freq_input
@@ -339,7 +343,7 @@ class Scenario(ScheduleBase):
 		return np.array(n).max() + 1
 
 
-	def generate_cashflow(self,periods:list = None, freq_output=None):
+	def generate_cashflow(self,periods:list = None, freq_output=None, add_name=None):
 		if freq_output is None:
 			freq_output = self.freq_output
 		#Make filter
@@ -362,7 +366,11 @@ class Scenario(ScheduleBase):
 					self.periods[p].cashflow_params.extend(self.cashflow_params)
 
 			try:
-				_cf = self.periods[p].generate_cashflow(freq_output=freq_output)
+				if add_name is None:
+					csh_name = self.name
+				else:
+					csh_name = add_name + '-' + self.name
+				_cf = self.periods[p].generate_cashflow(freq_output=freq_output, add_name=csh_name)
 			except Exception as e:
 				print(e)
 				list_periods_errors.append(self.periods[p].name)
@@ -425,7 +433,7 @@ class Well(ScheduleBase):
 
 		return well_forecast
 
-	def generate_cashflow(self, scenarios:Union[list,dict] = None, freq_output=None):
+	def generate_cashflow(self, scenarios:Union[list,dict] = None, freq_output=None, add_name=None):
 		if scenarios:
 			scenarios_list = scenarios if isinstance(scenarios,list) else list(scenarios.keys())
 			_scenarios = [i for i in self.scenarios if i in scenarios_list]
@@ -440,9 +448,12 @@ class Well(ScheduleBase):
 					self.scenarios[s].cashflow_params = self.cashflow_params
 				else:
 					self.scenarios[s].cashflow_params.append(self.cashflow_params)
- 
+			if add_name is None:
+				csh_name = self.name
+			else:
+				csh_name = add_name + '-' + self.name
 			periods = scenarios[s] if isinstance(scenarios,dict) else None
-			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output)
+			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output, add_name=csh_name)
 
 			list_cashflows.extend(cash_s)
    
@@ -498,7 +509,7 @@ class WellsGroup(ScheduleBase):
 
 		return wells_forecast
 
-	def generate_cashflow(self, wells:Union[list,dict] = None, freq_output=None):
+	def generate_cashflow(self, wells:Union[list,dict] = None, freq_output=None, add_name=None):
 		if wells:
 			wells_list = wells if isinstance(wells,list) else list(wells.keys())
 			_wells = [i for i in self.wells if i in wells_list]
@@ -513,9 +524,12 @@ class WellsGroup(ScheduleBase):
 					self.wells[w].cashflow_params = self.cashflow_params
 				else:
 					self.wells[w].cashflow_params.extend(self.cashflow_params)
-
+			if add_name is None:
+				csh_name = self.name
+			else:
+				csh_name = add_name + '-' + self.name
 			scenarios = wells[w] if isinstance(wells,dict) else None
-			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output)
+			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output, add_name=csh_name)
 
 			len_cashflows.append(len(cash_s))
    
