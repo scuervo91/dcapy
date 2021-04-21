@@ -122,7 +122,7 @@ class Wor(BaseModel,DCA):
         validate_assignment = True
         extra = Extra.forbid
 
-    def get_bsw(self,size=None, ppf=None):
+    def get_bsw(self,size=None, ppf=None, seed=None):
         """get_bsw get the number of bsw
 
         Args:
@@ -133,11 +133,11 @@ class Wor(BaseModel,DCA):
             np.array: Array if bsw
         """
         if isinstance(self.bsw,ProbVar):
-            return self.bsw.get_sample(size=size, ppf=ppf)
+            return self.bsw.get_sample(size=size, ppf=ppf, seed=seed)
         else:
             return np.atleast_1d(self.bsw)
 
-    def get_slope(self,size=None, ppf=None):
+    def get_slope(self,size=None, ppf=None, seed=None):
         """get_slope get the number of slope
 
         Args:
@@ -148,7 +148,7 @@ class Wor(BaseModel,DCA):
             np.array: Array if slope
         """
         if isinstance(self.slope,ProbVar):
-            return self.slope.get_sample(size=size, ppf=ppf)
+            return self.slope.get_sample(size=size, ppf=ppf, seed=seed)
         else:
             return np.atleast_1d(self.slope)
 
@@ -238,7 +238,7 @@ class Wor(BaseModel,DCA):
        
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, 
     	end:Union[date,float]=None, fluid_rate:Union[np.ndarray,float,list]=None,rate_limit:float=None,cum_limit:float=None, wor_limit:float=None,
-    	freq_input:str='D', freq_output:str='D', iter:int=1,ppf=None,cum_i=0,**kwargs)->pd.DataFrame:
+    	freq_input:str='D', freq_output:str='D', iter:int=1,ppf=None,cum_i=0, seed=None,**kwargs)->pd.DataFrame:
         if self.format() == 'date':
             freq_input = 'D'
             #Check if the time range was given. If True, use this to estimate the time array for
@@ -274,8 +274,8 @@ class Wor(BaseModel,DCA):
        	#Broadcast variables to set the total iterations
 
         #Get bsw and slope
-        bsw = self.get_bsw(size=iter, ppf=ppf)
-        slope = self.get_slope(size=iter, ppf=ppf)
+        bsw = self.get_bsw(size=iter, ppf=ppf, seed=seed)
+        slope = self.get_slope(size=iter, ppf=ppf, seed=seed)
 
         #Get the fluid Rate. 
         # If the result is a 2D numpy array the size must match the Time array 

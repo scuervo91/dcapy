@@ -282,7 +282,7 @@ class Arps(BaseModel,DCA):
     ############## Properties ###########################
     
             
-    def get_qi(self,size=None, ppf=None):
+    def get_qi(self,size=None, ppf=None, seed=None):
         """get_qi get the number of qi
 
         Args:
@@ -293,12 +293,12 @@ class Arps(BaseModel,DCA):
             np.array: Array if qi
         """
         if isinstance(self.qi,ProbVar):
-            return self.qi.get_sample(size=size, ppf=ppf)
+            return self.qi.get_sample(size=size, ppf=ppf, seed=seed)
         else:
             return np.atleast_1d(self.qi)
 
             
-    def get_di(self,size=None, ppf=None):
+    def get_di(self,size=None, ppf=None,seed=None):
         """get_di get the number of qi
 
         Args:
@@ -309,12 +309,12 @@ class Arps(BaseModel,DCA):
             np.array: Array if di
         """
         if isinstance(self.di,ProbVar):
-            return self.di.get_sample(size=size, ppf=ppf)
+            return self.di.get_sample(size=size, ppf=ppf, seed=seed)
         else:
             return np.atleast_1d(self.di)
             
 
-    def get_b(self,size=None, ppf=None):
+    def get_b(self,size=None, ppf=None, seed=None):
         """get_b get the number of qi
 
         Args:
@@ -325,7 +325,7 @@ class Arps(BaseModel,DCA):
             np.array: Array if b
         """
         if isinstance(self.b,ProbVar):
-            return self.b.get_sample(size=size, ppf=ppf)
+            return self.b.get_sample(size=size, ppf=ppf, seed=None)
         else:
             return np.atleast_1d(self.b)
         
@@ -383,7 +383,7 @@ class Arps(BaseModel,DCA):
         return arps_rate_time(qi,di,b,rate, ti=ti)
     
     def forecast(self,time_list:Union[pd.Series,np.ndarray]=None,start:Union[date,float]=None, end:Union[date,float]=None, rate_limit:float=None,
-                 cum_limit:float=None, freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None, **kwargs)->pd.DataFrame:
+                 cum_limit:float=None, freq_input:str='D', freq_output:str='M', iter:int=1,ppf=None,seed=None, **kwargs)->pd.DataFrame:
         """forecast [summary]
 
         Args:
@@ -441,9 +441,9 @@ class Arps(BaseModel,DCA):
             di_factor = converter_factor(self.freq_di,freq_input)
 
         
-        qi = self.get_qi(size=iter, ppf=ppf)
-        di = self.get_di(size=iter, ppf=ppf)*di_factor
-        b = self.get_b(size=iter, ppf=ppf).round(decimals=2)
+        qi = self.get_qi(size=iter, ppf=ppf, seed=seed)
+        di = self.get_di(size=iter, ppf=ppf, seed=seed)*di_factor
+        b = self.get_b(size=iter, ppf=ppf,seed=seed).round(decimals=2)
         
         
         iter = np.array([i.shape[0] for i in [qi,di,b,ti_delta]]).max()
