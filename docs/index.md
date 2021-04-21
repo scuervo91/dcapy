@@ -1,9 +1,9 @@
 # Dcapy
 
-**Documentation**[http://orkahub.github.io/dcapy](http://orkahub.github.io/dcapy)
-**Sorce Code** [https://github.com/orkahub/dcapy](https://github.com/orkahub/dcapy)
++ **Documentation** [http://orkahub.github.io/dcapy](http://orkahub.github.io/dcapy)
++ **Sorce Code** [https://github.com/orkahub/dcapy](https://github.com/orkahub/dcapy)
 
-Dcapy is a Decline Curve Analysis Python package for Oil & Gas that includes the classes and functions to perform a simple production forecast as well as probabilistic Well Schedules with cash flow analysis.  
+Dcapy is a Decline Curve Analysis Python package for Oil & Gas that includes the classes and functions to perform a simple production forecast as well as probabilistic Well Schedules with cashflow analysis.  
 
 The key features are:
 
@@ -21,13 +21,12 @@ The key features are:
 
 ## Installation
 
-<div id="termynal" data-termynal>
+
 ```console
 $ pip install dcapy
 
 ---> 100%
 ```
-</div>
 
 
 ## License

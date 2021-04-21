@@ -3,7 +3,7 @@ theme:
   name: material
   palette:
     scheme: preference
-    primary: white
+    primary: blue grey
     accent: deep purple
   features:
     - navigation.instant
@@ -19,6 +19,9 @@ nav:
   - Home: index.md
   - Code Reference:
     - dca: dca-reference.md
+    - filters: filters-reference.md
+    - models: models-reference.md 
+    - weiner: weiner-reference.md 
   - Tutorial:
     - Intro: tutorial/1-Intro.md
 
@@ -28,12 +31,3 @@ repo_name: orkahub/dcapy
 plugins:
   - search
   - mkdocstrings
-
-extra_css:
-- css/termynal.css
-- css/custom.css
-extra_javascript:
-- https://unpkg.com/mermaid@8.4.6/dist/mermaid.min.js
-- js/termynal.js
-- js/custom.js
-
