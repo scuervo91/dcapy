@@ -299,7 +299,9 @@ class Scenario(ScheduleBase):
 			_periods = [i for i in self.periods if i in periods]
 		else:
 			_periods = list(self.periods.keys())
-
+   
+		if seed is None:
+			seed = self.seed
 
 		list_forecast = []
 		list_periods_errors = []
@@ -361,6 +363,9 @@ class Scenario(ScheduleBase):
 
 		n = self._iterations(periods = periods)
 		#print(n)
+  
+		if seed is None:
+			seed = self.seed
 
 		cashflow_models = [CashFlowModel(name=f'{self.name}_{i}') for i in range(n)]
 		list_periods_errors = []
@@ -484,6 +489,9 @@ class Well(ScheduleBase):
    
 		list_forecast = []
   
+		if seed is None:
+			seed = self.seed
+  
 		for s in _scenarios:
 			periods = scenarios[s] if isinstance(scenarios,dict) else None
 			_f = self.scenarios[s].generate_forecast(periods = periods, freq_output=freq_output, iter=iter, seed=seed)
@@ -507,6 +515,9 @@ class Well(ScheduleBase):
 			_scenarios = list(self.scenarios.keys())
    
 		list_cashflows = []
+  
+		if seed is None:
+			seed = self.seed
 
 		for s in _scenarios:
 			if self.cashflow_params:
@@ -618,6 +629,9 @@ class WellsGroup(ScheduleBase):
    
 		list_forecast = []
   
+		if seed is None:
+			seed = self.seed
+  
 		for w in _wells:
 			scenarios = wells[w] if isinstance(wells,dict) else None
 			_f = self.wells[w].generate_forecast(scenarios = scenarios, freq_output=freq_output, iter=iter, seed=seed)
@@ -638,6 +652,9 @@ class WellsGroup(ScheduleBase):
 			_wells = [i for i in self.wells if i in wells_list]
 		else:
 			_wells = list(self.wells.keys())
+   
+		if seed is None:
+			seed = self.seed
    
 		list_cashflows = []
 		len_cashflows = []
