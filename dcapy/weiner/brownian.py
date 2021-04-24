@@ -12,6 +12,8 @@ from ..dca import list_freq, converter_factor, ProbVar
 class Weiner(BaseModel):
     initial_condition:  Union[float,List[float]] = Field(0)
     ti: Union[int,date] = Field(0)
+    steps: int = Field(1, gt=0)
+    processes: int = Field(1, gt=0)
     generator: ProbVar = Field(ProbVar())
     freq: Literal['M','D','A'] = Field('D')
 
@@ -20,7 +22,7 @@ class Weiner(BaseModel):
         validate_assignment = True
         extra = Extra.forbid
 
-    def weiner_generator(self,steps:int,processes:int,interval=None, seed=None):
+    def weiner_generator(self,steps:int=None,processes:int=None,interval=None, seed=None):       
         for i in [steps,processes]:
             assert isinstance(i,int)
             
@@ -41,7 +43,6 @@ class Weiner(BaseModel):
         return self.generator.get_sample(size=size, seed=seed, ppf=ppf)     
     
     def get_index_array(self, steps:int, freq_output:str):
-
         if isinstance(self.ti,date):
             return pd.period_range(start=self.ti,periods=steps,freq=freq_output)
             #idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in pr]
@@ -56,7 +57,7 @@ class Brownian(Weiner):
         validate_assignment = True
         extra = Extra.forbid
 
-    def generate(self,steps,processes, freq_output='D',interval=None, seed=None):
+    def generate(self,steps=None,processes=None, freq_output='D',interval=None, seed=None):
         """brownian_motion [summary]
 
         Args:
@@ -69,6 +70,12 @@ class Brownian(Weiner):
         Returns:
             [type]: [description]
         """
+        if steps is None:
+            steps = self.steps
+ 
+        if processes is None:
+            processes = self.processes    
+            
         if interval is not None:
             assert all([interval>=0,interval<=1])
             epsilon = self.weiner_generator(steps,processes,interval=interval)
@@ -102,7 +109,7 @@ class GeometricBrownian(Weiner):
         validate_assignment = True
         extra = Extra.forbid
 
-    def generate(self,steps,processes, freq_output='D',interval=None, seed=None):
+    def generate(self,steps=None,processes=None, freq_output='D',interval=None, seed=None):
         """geometric_brownian_motion [summary]
 
         Args:
@@ -115,6 +122,12 @@ class GeometricBrownian(Weiner):
         Returns:
             [type]: [description]
         """
+        if steps is None:
+            steps = self.steps
+ 
+        if processes is None:
+            processes = self.processes    
+ 
         if interval is not None:
             assert all([interval>=0,interval<=1])
             epsilon = self.weiner_generator(steps,processes,interval=interval)
@@ -153,7 +166,7 @@ class MeanReversion(Weiner):
         validate_assignment = True
         extra = Extra.forbid
         
-    def generate(self,steps,processes, freq_output='D',interval=None, seed=None):
+    def generate(self,steps=None,processes=None, freq_output='D',interval=None, seed=None):
         """mean_reversion [summary]
 
         Args:
@@ -163,7 +176,12 @@ class MeanReversion(Weiner):
             interval ([type], optional): [description]. Defaults to None.
             seed ([type], optional): [description]. Defaults to None.
         """
-        
+        if steps is None:
+            steps = self.steps
+ 
+        if processes is None:
+            processes = self.processes    
+ 
         epsilon = self.weiner_generator(steps,processes, seed=seed)
         
         #Create zeros arrays for Weiner Process. Rows number of process, Columns Steps

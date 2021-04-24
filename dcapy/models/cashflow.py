@@ -124,7 +124,7 @@ class CashFlowParams(BaseModel):
                 #assert len(values[i]) == v
         return v
     
-    def get_value(self,i:int, seed:int=None,steps:int=None, freq_output:str=None, ppf:float=None, interval:float=None):
+    def get_value(self,i:int, seed:int=None, freq_output:str=None, ppf:float=None, interval:float=None):
         if isinstance(self.value,(ChgPts,float)):
             return self.value 
         if isinstance(self.value,list):
@@ -132,11 +132,11 @@ class CashFlowParams(BaseModel):
         if isinstance(self.value,ProbVar):
             return self.value.get_sample(size=1, seed=seed, ppf=ppf)
         if isinstance(self.value,(Brownian,MeanReversion,GeometricBrownian)):
-            df = self.value.generate(steps,1,freq_output=freq_output,interval=interval,seed=seed)
+            df = self.value.generate(processes=i+1,freq_output=freq_output,interval=interval,seed=seed)
             idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in df.index]
-            return ChgPts(date=idx, value=df.iloc[:,0].values.tolist())
+            return ChgPts(date=idx, value=df.iloc[:,i].values.tolist())
 
-    def get_wi(self,i:int, seed:int=None,steps:int=None, freq_output:str=None, interval:float=None, ppf=None):
+    def get_wi(self,i:int, seed:int=None, freq_output:str=None, interval:float=None, ppf=None):
         if isinstance(self.wi,(ChgPts,float)):
             return self.wi 
         if isinstance(self.wi,list):
@@ -144,9 +144,9 @@ class CashFlowParams(BaseModel):
         if isinstance(self.wi,ProbVar):
             return self.wi.get_sample(size=1, seed=seed, ppf=ppf)
         if isinstance(self.wi,(Brownian,MeanReversion,GeometricBrownian)):
-            df = self.wi.generate(steps,1,freq_output=freq_output,interval=interval,seed=seed)
+            df = self.wi.generate(processes=i+1,freq_output=freq_output,interval=interval,seed=seed)
             idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in df.index]
-            return ChgPts(date=idx, value=df.iloc[:,0].values.tolist())
+            return ChgPts(date=idx, value=df.iloc[:,i].values.tolist())
         
 
 class CashFlowModel(BaseModel):

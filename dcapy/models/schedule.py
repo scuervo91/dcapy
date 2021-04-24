@@ -199,8 +199,8 @@ class Period(ScheduleBase):
 					})
 					p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 					steps = len(p_range)
-					param_value = param.get_value(i,freq_output=freq_output,steps=steps, seed=seed, ppf=ppf)
-					param_wi = param.get_wi(i,freq_output=freq_output,steps=steps, ppf=ppf)
+					param_value = param.get_value(i,freq_output=freq_output, seed=seed, ppf=ppf)
+					param_wi = param.get_wi(i,freq_output=freq_output, seed=seed, ppf=ppf)
 					if isinstance(param_wi,ChgPts):
 						idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else param.array_values.date
 						values_series_wi = pd.Series(param_wi.value, index=idx_wi)
@@ -221,7 +221,6 @@ class Period(ScheduleBase):
 							#to be consistent with the freq of the forecast when multiply
 							idx = pd.to_datetime(param_value.date).to_period(freq_output) if is_date_mode  else param_value.date
 							values_series = pd.Series(param_value.value, index=idx)
-							
 							_array_values = _forecast_i[multiply_col].multiply(values_series).multiply(values_series_wi).dropna()
 
 							if _array_values.empty:
@@ -432,8 +431,8 @@ class Scenario(ScheduleBase):
 				})
 				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 				steps = len(p_range)
-				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps, ppf=ppf)
-				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps, ppf=ppf)
+				param_value = gparam.get_value(i,freq_output=freq_output, ppf=ppf, seed=seed)
+				param_wi = gparam.get_wi(i,freq_output=freq_output, ppf=ppf, seed=seed)
 				if isinstance(param_wi,ChgPts):
 					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
 					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
@@ -581,8 +580,8 @@ class Well(ScheduleBase):
 				})
 				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 				steps = len(p_range)
-				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps, ppf=ppf)
-				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps, ppf=ppf)
+				param_value = gparam.get_value(i,freq_output=freq_output, ppf=ppf, seed=seed)
+				param_wi = gparam.get_wi(i,freq_output=freq_output, ppf=ppf, seed=seed)
 				if isinstance(param_wi,ChgPts):
 					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
 					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
@@ -741,8 +740,8 @@ class WellsGroup(ScheduleBase):
 				})
 				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 				steps = len(p_range)
-				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps, ppf=ppf)
-				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps, ppf=ppf)
+				param_value = gparam.get_value(i,freq_output=freq_output, ppf=ppf, seed=seed)
+				param_wi = gparam.get_wi(i,freq_output=freq_output, ppf=ppf, seed=seed)
 				if isinstance(param_wi,ChgPts):
 					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
 					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
