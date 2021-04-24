@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from ..dca import converter_factor
-from ..weiner import Weiner
+from ..weiner import Brownian, MeanReversion, GeometricBrownian
 
 
 freq_format={
@@ -104,9 +104,9 @@ class CashFlow(BaseModel):
 class CashFlowParams(BaseModel):
     name : str = Field(...)
     #const_value : Optional[Union[ProbVar,List[float],float]] = Field(None)
-    wi : Union[ProbVar,List[float],float,List[ChgPts],ChgPts,Weiner] = Field(1.)
+    wi : Union[ProbVar,List[float],float,List[ChgPts],ChgPts,Brownian,MeanReversion,GeometricBrownian] = Field(1.)
     periods : Optional[int] = Field(None, ge=-1)
-    value : Union[ProbVar,List[float],float,List[ChgPts],ChgPts,Weiner] = Field(...)
+    value : Union[ProbVar,List[float],float,List[ChgPts],ChgPts,Brownian,MeanReversion,GeometricBrownian] = Field(...)
     #array_values : Optional[Union[Weiner,List[ChgPts],ChgPts]] = Field(None)
     target : Literal['income','opex','capex'] = Field(...)
     multiply : Optional[str] = Field(None)
@@ -124,27 +124,27 @@ class CashFlowParams(BaseModel):
                 #assert len(values[i]) == v
         return v
     
-    def get_value(self,i:int, seed:int=None,steps:int=None, freq_output:str=None, interval:float=None):
+    def get_value(self,i:int, seed:int=None,steps:int=None, freq_output:str=None, ppf:float=None, interval:float=None):
         if isinstance(self.value,(ChgPts,float)):
             return self.value 
         if isinstance(self.value,list):
             return self.value[i]
         if isinstance(self.value,ProbVar):
-            return self.value.get_sample(size=1, seed=seed)
-        if isinstance(self.value,Weiner):
-            df = self.value.geometric_brownian_motion(steps,1,freq_output=freq_output,interval=interval,seed=seed)
+            return self.value.get_sample(size=1, seed=seed, ppf=ppf)
+        if isinstance(self.value,(Brownian,MeanReversion,GeometricBrownian)):
+            df = self.value.generate(steps,1,freq_output=freq_output,interval=interval,seed=seed)
             idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in df.index]
             return ChgPts(date=idx, value=df.iloc[:,0].values.tolist())
 
-    def get_wi(self,i:int, seed:int=None,steps:int=None, freq_output:str=None, interval:float=None):
+    def get_wi(self,i:int, seed:int=None,steps:int=None, freq_output:str=None, interval:float=None, ppf=None):
         if isinstance(self.wi,(ChgPts,float)):
             return self.wi 
         if isinstance(self.wi,list):
             return self.wi[i]
         if isinstance(self.wi,ProbVar):
-            return self.wi.get_sample(size=1, seed=seed)
-        if isinstance(self.wi,Weiner):
-            df = self.wi.geometric_brownian_motion(steps,1,freq_output=freq_output,interval=interval,seed=seed)
+            return self.wi.get_sample(size=1, seed=seed, ppf=ppf)
+        if isinstance(self.wi,(Brownian,MeanReversion,GeometricBrownian)):
+            df = self.wi.generate(steps,1,freq_output=freq_output,interval=interval,seed=seed)
             idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in df.index]
             return ChgPts(date=idx, value=df.iloc[:,0].values.tolist())
         

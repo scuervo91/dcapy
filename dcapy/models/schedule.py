@@ -34,6 +34,8 @@ class ScheduleBase(BaseModel):
 	cashflow : Optional[List[CashFlowModel]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
 	seed: Optional[int] = Field(None)
+	iter : int = Field(1, ge=1)
+	ppf : Optional[float] = Field(None, ge=0, le=1)
  
 	class Config:
 		arbitrary_types_allowed = True
@@ -66,10 +68,7 @@ class Period(ScheduleBase):
 	freq_output: Literal['M','D','A'] = Field('D')
 	rate_limit: Optional[float] = Field(None, ge=0)
 	cum_limit: Optional[float] = Field(None, ge=0)
-	iter : int = Field(1, ge=1)
-	ppf : Optional[float] = Field(None, ge=0, le=1)
 	depends: Optional[Depends] = Field(None)
-
 
 	@validator('end')
 	def start_end_match_type(cls,v,values):
@@ -87,7 +86,7 @@ class Period(ScheduleBase):
 		if isinstance(self.start,int):
 			return False
 
-	def generate_forecast(self, freq_output=None, iter=None, seed=None):
+	def generate_forecast(self, freq_output=None, iter=None, seed=None, ppf=None):
 		#If freq_output is not defined in the method. 
   		# Use the freq_out defined in the class
 		if freq_output is None:
@@ -100,6 +99,9 @@ class Period(ScheduleBase):
 
 		if seed is None:
 			seed = self.seed
+   
+		if ppf is None:
+			ppf = self.ppf
    
 		_forecast = self.dca.forecast(
 			time_list = self.time_list,start=self.start, end=self.end, freq_input=self.freq_input, 
@@ -126,12 +128,15 @@ class Period(ScheduleBase):
 				return [i for i in dates_sr]
 		raise ValueError('There is no any Forecast')
 
-	def generate_cashflow(self, freq_output=None, add_name=None, seed=None):
+	def generate_cashflow(self, freq_output=None, add_name=None, seed=None, ppf=None):
 		if freq_output is None:
 			freq_output = self.freq_output
    
 		if seed is None:
 			seed = self.seed
+
+		if ppf is None:
+			ppf = self.ppf
    
 		if self.forecast is not None and self.cashflow_params is not None:
 
@@ -194,8 +199,8 @@ class Period(ScheduleBase):
 					})
 					p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 					steps = len(p_range)
-					param_value = param.get_value(i,freq_output=freq_output,steps=steps, seed=seed)
-					param_wi = param.get_wi(i,freq_output=freq_output,steps=steps)
+					param_value = param.get_value(i,freq_output=freq_output,steps=steps, seed=seed, ppf=ppf)
+					param_wi = param.get_wi(i,freq_output=freq_output,steps=steps, ppf=ppf)
 					if isinstance(param_wi,ChgPts):
 						idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else param.array_values.date
 						values_series_wi = pd.Series(param_wi.value, index=idx_wi)
@@ -290,7 +295,7 @@ class Scenario(ScheduleBase):
 
 	# TODO: Make validation for all periods are in the same time basis (Integers or date)
 
-	def generate_forecast(self, periods:list = None, freq_output=None, iter=None, seed=None):
+	def generate_forecast(self, periods:list = None, freq_output=None, iter=None, seed=None, ppf=None):
 		#if freq_output is None:
 		#	freq_output = self.freq_output
 		
@@ -300,8 +305,14 @@ class Scenario(ScheduleBase):
 		else:
 			_periods = list(self.periods.keys())
    
+		if iter is None:
+			iter = self.iter
+
 		if seed is None:
 			seed = self.seed
+   
+		if ppf is None:
+			ppf = self.ppf
 
 		list_forecast = []
 		list_periods_errors = []
@@ -317,7 +328,7 @@ class Scenario(ScheduleBase):
 					new_ti = [i + self.periods[p].depends.delay for i in new_ti]
 
 				self.periods[p].dca.ti = new_ti
-			_f = self.periods[p].generate_forecast(freq_output=freq_output, iter=iter, seed=seed)
+			_f = self.periods[p].generate_forecast(freq_output=freq_output, iter=iter, seed=seed, ppf=ppf)
 			
 			#try:
 			#	_f = self.periods[p].generate_forecast()
@@ -352,7 +363,7 @@ class Scenario(ScheduleBase):
 		return np.array(n).max() + 1
 
 
-	def generate_cashflow(self,periods:list = None, freq_output=None, add_name=None, seed=None):
+	def generate_cashflow(self,periods:list = None, freq_output=None, add_name=None, seed=None, ppf=None):
 		if freq_output is None:
 			freq_output = self.freq_output
 		#Make filter
@@ -366,6 +377,9 @@ class Scenario(ScheduleBase):
   
 		if seed is None:
 			seed = self.seed
+   
+		if ppf is None:
+			ppf = self.ppf
 
 		cashflow_models = [CashFlowModel(name=f'{self.name}_{i}') for i in range(n)]
 		list_periods_errors = []
@@ -390,7 +404,7 @@ class Scenario(ScheduleBase):
 					csh_name = self.name
 				else:
 					csh_name = add_name + '-' + self.name
-				_cf = self.periods[p].generate_cashflow(freq_output=freq_output, add_name=csh_name, seed=seed)
+				_cf = self.periods[p].generate_cashflow(freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf)
 			except Exception as e:
 				print(e)
 				list_periods_errors.append(self.periods[p].name)
@@ -418,8 +432,8 @@ class Scenario(ScheduleBase):
 				})
 				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 				steps = len(p_range)
-				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps)
-				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps)
+				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps, ppf=ppf)
+				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps, ppf=ppf)
 				if isinstance(param_wi,ChgPts):
 					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
 					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
@@ -479,7 +493,7 @@ class Well(ScheduleBase):
 			return v 
 		raise ValueError(f'The format of the periods are different {format_list}')
 
-	def generate_forecast(self, scenarios:Union[list,dict] = None, freq_output=None, iter=None, seed=None):
+	def generate_forecast(self, scenarios:Union[list,dict] = None, freq_output=None, iter=None, seed=None, ppf=None):
 		#Make filter
 		if scenarios:
 			scenarios_list = scenarios if isinstance(scenarios,list) else list(scenarios.keys())
@@ -489,12 +503,18 @@ class Well(ScheduleBase):
    
 		list_forecast = []
   
+		if iter is None:
+			iter = self.iter
+
 		if seed is None:
 			seed = self.seed
+   
+		if ppf is None:
+			ppf = self.ppf
   
 		for s in _scenarios:
 			periods = scenarios[s] if isinstance(scenarios,dict) else None
-			_f = self.scenarios[s].generate_forecast(periods = periods, freq_output=freq_output, iter=iter, seed=seed)
+			_f = self.scenarios[s].generate_forecast(periods = periods, freq_output=freq_output, iter=iter, seed=seed, ppf=ppf)
 
 			list_forecast.append(_f)
    
@@ -507,7 +527,7 @@ class Well(ScheduleBase):
 
 		return well_forecast
 
-	def generate_cashflow(self, scenarios:Union[list,dict] = None, freq_output=None, add_name=None, seed=None):
+	def generate_cashflow(self, scenarios:Union[list,dict] = None, freq_output=None, add_name=None, seed=None, ppf=None):
 		if scenarios:
 			scenarios_list = scenarios if isinstance(scenarios,list) else list(scenarios.keys())
 			_scenarios = [i for i in self.scenarios if i in scenarios_list]
@@ -518,6 +538,9 @@ class Well(ScheduleBase):
   
 		if seed is None:
 			seed = self.seed
+   
+		if ppf is None:
+			ppf = self.ppf
 
 		for s in _scenarios:
 			if self.cashflow_params:
@@ -537,7 +560,7 @@ class Well(ScheduleBase):
 			else:
 				csh_name = add_name + '-' + self.name
 			periods = scenarios[s] if isinstance(scenarios,dict) else None
-			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output, add_name=csh_name, seed=seed)
+			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf)
 
 			list_cashflows.extend(cash_s)
 
@@ -558,8 +581,8 @@ class Well(ScheduleBase):
 				})
 				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 				steps = len(p_range)
-				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps)
-				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps)
+				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps, ppf=ppf)
+				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps, ppf=ppf)
 				if isinstance(param_wi,ChgPts):
 					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
 					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
@@ -619,7 +642,7 @@ class WellsGroup(ScheduleBase):
 		raise ValueError(f'The format of the periods are different {format_list}')
 
 
-	def generate_forecast(self, wells:Union[list,dict] = None, freq_output=None, iter=None, seed=None):
+	def generate_forecast(self, wells:Union[list,dict] = None, freq_output=None, iter=None, seed=None, ppf=None):
 		#Make filter
 		if wells:
 			wells_list = wells if isinstance(wells,list) else list(wells.keys())
@@ -629,12 +652,18 @@ class WellsGroup(ScheduleBase):
    
 		list_forecast = []
   
+		if iter is None:
+			iter = self.iter
+
 		if seed is None:
 			seed = self.seed
+   
+		if ppf is None:
+			ppf = self.ppf
   
 		for w in _wells:
 			scenarios = wells[w] if isinstance(wells,dict) else None
-			_f = self.wells[w].generate_forecast(scenarios = scenarios, freq_output=freq_output, iter=iter, seed=seed)
+			_f = self.wells[w].generate_forecast(scenarios = scenarios, freq_output=freq_output, iter=iter, seed=seed, ppf=ppf)
 
 			list_forecast.append(_f)
    
@@ -646,7 +675,7 @@ class WellsGroup(ScheduleBase):
 
 		return wells_forecast
 
-	def generate_cashflow(self, wells:Union[list,dict] = None, freq_output=None, add_name=None, seed=None):
+	def generate_cashflow(self, wells:Union[list,dict] = None, freq_output=None, add_name=None, seed=None, ppf=None):
 		if wells:
 			wells_list = wells if isinstance(wells,list) else list(wells.keys())
 			_wells = [i for i in self.wells if i in wells_list]
@@ -655,6 +684,9 @@ class WellsGroup(ScheduleBase):
    
 		if seed is None:
 			seed = self.seed
+
+		if ppf is None:
+			ppf = self.ppf
    
 		list_cashflows = []
 		len_cashflows = []
@@ -676,7 +708,7 @@ class WellsGroup(ScheduleBase):
 			else:
 				csh_name = add_name + '-' + self.name
 			scenarios = wells[w] if isinstance(wells,dict) else None
-			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output, add_name=csh_name, seed=seed)
+			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf)
 
 			len_cashflows.append(len(cash_s))
    
@@ -709,8 +741,8 @@ class WellsGroup(ScheduleBase):
 				})
 				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 				steps = len(p_range)
-				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps)
-				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps)
+				param_value = gparam.get_value(i,freq_output=freq_output,steps=steps, ppf=ppf)
+				param_wi = gparam.get_wi(i,freq_output=freq_output,steps=steps, ppf=ppf)
 				if isinstance(param_wi,ChgPts):
 					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
 					values_series_wi = pd.Series(param_wi.value, index=idx_wi)

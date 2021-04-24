@@ -14,13 +14,12 @@ class Weiner(BaseModel):
     ti: Union[int,date] = Field(0)
     generator: ProbVar = Field(ProbVar())
     freq: Literal['M','D','A'] = Field('D')
-    drift : float = Field(0)
 
     class Config:
         arbitrary_types_allowed = True
         validate_assignment = True
         extra = Extra.forbid
-    
+
     def weiner_generator(self,steps:int,processes:int,interval=None, seed=None):
         for i in [steps,processes]:
             assert isinstance(i,int)
@@ -49,8 +48,27 @@ class Weiner(BaseModel):
         else:
             return np.arange(0,steps,1).tolist()
 
-    def brownian_motion(self,steps,processes, freq_output='D',interval=None, seed=None):
-        
+class Brownian(Weiner):
+    drift : float = Field(0)
+    
+    class Config:
+        arbitrary_types_allowed = True
+        validate_assignment = True
+        extra = Extra.forbid
+
+    def generate(self,steps,processes, freq_output='D',interval=None, seed=None):
+        """brownian_motion [summary]
+
+        Args:
+            steps ([type]): [description]
+            processes ([type]): [description]
+            freq_output (str, optional): [description]. Defaults to 'D'.
+            interval ([type], optional): [description]. Defaults to None.
+            seed ([type], optional): [description]. Defaults to None.
+
+        Returns:
+            [type]: [description]
+        """
         if interval is not None:
             assert all([interval>=0,interval<=1])
             epsilon = self.weiner_generator(steps,processes,interval=interval)
@@ -75,9 +93,28 @@ class Weiner(BaseModel):
         idx = self.get_index_array(steps,freq_output)
         
         return pd.DataFrame(w.T, index=idx,columns=range(processes))
-    
-    def geometric_brownian_motion(self,steps,processes, freq_output='D',interval=None, seed=None):
 
+class GeometricBrownian(Weiner):
+    drift : float = Field(0)
+    
+    class Config:
+        arbitrary_types_allowed = True
+        validate_assignment = True
+        extra = Extra.forbid
+
+    def generate(self,steps,processes, freq_output='D',interval=None, seed=None):
+        """geometric_brownian_motion [summary]
+
+        Args:
+            steps ([type]): [description]
+            processes ([type]): [description]
+            freq_output (str, optional): [description]. Defaults to 'D'.
+            interval ([type], optional): [description]. Defaults to None.
+            seed ([type], optional): [description]. Defaults to None.
+
+        Returns:
+            [type]: [description]
+        """
         if interval is not None:
             assert all([interval>=0,interval<=1])
             epsilon = self.weiner_generator(steps,processes,interval=interval)
@@ -103,6 +140,47 @@ class Weiner(BaseModel):
             for t in range(1,steps):
                 w[n,t] = w[n,t-1]*np.exp(drift + (epsilon[n,t]*np.sqrt(dt)))
         
+        idx = self.get_index_array(steps,freq_output)
+        
+        return pd.DataFrame(w.T, index=idx,columns=range(processes))
+
+class MeanReversion(Weiner):
+    m : float = Field(0)
+    eta : float = Field(0)
+    
+    class Config:
+        arbitrary_types_allowed = True
+        validate_assignment = True
+        extra = Extra.forbid
+        
+    def generate(self,steps,processes, freq_output='D',interval=None, seed=None):
+        """mean_reversion [summary]
+
+        Args:
+            steps ([type]): [description]
+            processes ([type]): [description]
+            freq_output (str, optional): [description]. Defaults to 'D'.
+            interval ([type], optional): [description]. Defaults to None.
+            seed ([type], optional): [description]. Defaults to None.
+        """
+        
+        epsilon = self.weiner_generator(steps,processes, seed=seed)
+        
+        #Create zeros arrays for Weiner Process. Rows number of process, Columns Steps
+        w = np.zeros((processes,steps))
+        w[:,0] = self.initial_condition
+        
+        # Time Step size
+        dt = converter_factor(self.freq,freq_output)
+        
+        m = self.m 
+        eta = self.eta
+        
+        #Weiner Process
+        for n in range(processes):
+            for t in range(1,steps):
+                w[n,t] = m * (1 - np.exp(-eta)) + (np.exp(-eta) - 1) * w[n,t-1] + epsilon[n,t] + w[n,t-1]
+
         idx = self.get_index_array(steps,freq_output)
         
         return pd.DataFrame(w.T, index=idx,columns=range(processes))
