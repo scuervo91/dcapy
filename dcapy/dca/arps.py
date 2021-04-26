@@ -202,7 +202,8 @@ def arps_cumulative(time_array:Union[np.ndarray, list],qi:Union[np.ndarray,float
                 raise
     
     time_diff = np.atleast_1d(time_array).astype(float) - params_dict['ti']
-       
+    time_diff[time_diff<0] = np.nan
+    
     f = np.where(
         params_dict['b']==0,
         arps_exp_cumulative(time_diff,params_dict['qi'],params_dict['di']),
