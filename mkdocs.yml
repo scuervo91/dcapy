@@ -24,6 +24,10 @@ nav:
     - weiner: weiner-reference.md 
   - Tutorial:
     - Intro: tutorial/1-Intro.md
+    - Arps Declination:
+      - Arps Basics: tutorial/1a-Tutorial-Arps_basic_dca.md
+      - Arps Class: tutorial/1b-Tutorial-Arps_Class/1b-Tutorial-Arps_Class.md
+
 
 repo_url: https://github.com/orkahub/dcapy
 repo_name: orkahub/dcapy

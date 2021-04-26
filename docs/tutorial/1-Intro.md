@@ -15,4 +15,3 @@ This tutorial is devided in the next sections in order to explain all the module
 + **Weiner Module**: It explain how to get simple random walks simulations including the Geometric Brownonian Motion to be used, for example, to model the oil prices probabilistically. 
 
 + **Models Module**: This section explains how to implement the *scheduling* and *cashflow* features to evaluate groups of forecast, scenarios and wells not only in production behavior but also their economics  indexes.
-
