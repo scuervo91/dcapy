@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from ..dca import converter_factor
-from ..weiner import Brownian, MeanReversion, GeometricBrownian
+from ..wiener import Brownian, MeanReversion, GeometricBrownian
 
 
 freq_format={
@@ -110,10 +110,11 @@ class CashFlowParams(BaseModel):
     #array_values : Optional[Union[Weiner,List[ChgPts],ChgPts]] = Field(None)
     target : Literal['income','opex','capex'] = Field(...)
     multiply : Optional[str] = Field(None)
-    agg : Literal['sum','mean'] = Field('sum')
+    agg : Literal['sum','mean'] = Field('mean')
     depends: bool = Field(False)
     iter: int = Field(1,ge=1) 
     general: bool = Field(False)
+    freq_value: Optional[Literal['M','D','A']] = Field(None)
 
     @validator('iter', always=True)
     def check_list_length(cls,v,values):

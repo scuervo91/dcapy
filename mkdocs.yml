@@ -21,7 +21,7 @@ nav:
     - dca: dca-reference.md
     - filters: filters-reference.md
     - models: models-reference.md 
-    - weiner: weiner-reference.md 
+    - weiner: wiener-reference.md 
   - Tutorial:
     - Intro: tutorial/1-Intro.md
     - Arps Declination:

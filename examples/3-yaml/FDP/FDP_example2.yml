@@ -293,7 +293,8 @@ wells:
 cashflow_params:
 - name: fix_opex
   target: opex
-  value: -132000.0
+  value: -11000.
+  freq_value: 'M'
 - iter: 1
   multiply: oil_volume
   name: var_opex

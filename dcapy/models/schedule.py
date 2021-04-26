@@ -201,6 +201,12 @@ class Period(ScheduleBase):
 					steps = len(p_range)
 					param_value = param.get_value(i,freq_output=freq_output, seed=seed, ppf=ppf)
 					param_wi = param.get_wi(i,freq_output=freq_output, seed=seed, ppf=ppf)
+     
+					if param.freq_value:
+						freq_conv = converter_factor(param.freq_value,freq_output)
+					else:
+						freq_conv = 1
+      
 					if isinstance(param_wi,ChgPts):
 						idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else param.array_values.date
 						values_series_wi = pd.Series(param_wi.value, index=idx_wi)
@@ -220,7 +226,7 @@ class Period(ScheduleBase):
 							#If the array values date is a datetime.date convert to output frecuency
 							#to be consistent with the freq of the forecast when multiply
 							idx = pd.to_datetime(param_value.date).to_period(freq_output) if is_date_mode  else param_value.date
-							values_series = pd.Series(param_value.value, index=idx)
+							values_series = pd.Series(param_value.value, index=idx).groupby(level=0).agg(param.agg)
 							_array_values = _forecast_i[multiply_col].multiply(values_series).multiply(values_series_wi).dropna()
 
 							if _array_values.empty:
@@ -233,13 +239,13 @@ class Period(ScheduleBase):
 									}
 								})
 						else:         
-							_const_value = _forecast_i[multiply_col].multiply(param_value).multiply(values_series_wi)
+							_const_value = _forecast_i[multiply_col].multiply(param_value*freq_conv).multiply(values_series_wi)
 							cashflow_dict.update({'const_value':_const_value.tolist()})
 
 					else:
 						if isinstance(param_value,ChgPts):
 							idx = pd.to_datetime(param_value.date).to_period(freq_output) if is_date_mode  else param_value.date
-							values_series = pd.Series(param_value.value, index=idx)
+							values_series = pd.Series(param_value.value, index=idx).groupby(level=0).agg(param.agg)
 
 							_array_values = values_series.multiply(values_series_wi).dropna()
 							cashflow_dict.update({
@@ -247,7 +253,7 @@ class Period(ScheduleBase):
 							})
 						else:
 							cashflow_dict.update({
-								'const_value':param_value * values_series_wi,
+								'const_value':param_value * freq_conv * values_series_wi,
 								'periods':param.periods
 							})
 
@@ -433,6 +439,12 @@ class Scenario(ScheduleBase):
 				steps = len(p_range)
 				param_value = gparam.get_value(i,freq_output=freq_output, ppf=ppf, seed=seed)
 				param_wi = gparam.get_wi(i,freq_output=freq_output, ppf=ppf, seed=seed)
+
+				if gparam.freq_value:
+					freq_conv = converter_factor(gparam.freq_value,freq_output)
+				else:
+					freq_conv = 1
+      
 				if isinstance(param_wi,ChgPts):
 					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
 					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
@@ -449,7 +461,7 @@ class Scenario(ScheduleBase):
 					})
 				else:
 					cashflow_dict.update({
-						'const_value':param_value * values_series_wi,
+						'const_value':param_value * freq_conv * values_series_wi,
 						'periods':gparam.periods
 					})
 
@@ -582,6 +594,12 @@ class Well(ScheduleBase):
 				steps = len(p_range)
 				param_value = gparam.get_value(i,freq_output=freq_output, ppf=ppf, seed=seed)
 				param_wi = gparam.get_wi(i,freq_output=freq_output, ppf=ppf, seed=seed)
+    
+				if gparam.freq_value:
+					freq_conv = converter_factor(gparam.freq_value,freq_output)
+				else:
+					freq_conv = 1
+     
 				if isinstance(param_wi,ChgPts):
 					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
 					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
@@ -598,7 +616,7 @@ class Well(ScheduleBase):
 					})
 				else:
 					cashflow_dict.update({
-						'const_value':param_value * values_series_wi,
+						'const_value':param_value * freq_conv * values_series_wi,
 						'periods':gparam.periods
 					})
 
@@ -742,6 +760,12 @@ class WellsGroup(ScheduleBase):
 				steps = len(p_range)
 				param_value = gparam.get_value(i,freq_output=freq_output, ppf=ppf, seed=seed)
 				param_wi = gparam.get_wi(i,freq_output=freq_output, ppf=ppf, seed=seed)
+
+				if gparam.freq_value:
+					freq_conv = converter_factor(gparam.freq_value,freq_output)
+				else:
+					freq_conv = 1
+
 				if isinstance(param_wi,ChgPts):
 					idx_wi = pd.to_datetime(param_wi.date).to_period(freq_output) if is_date_mode  else gparam.array_values.date
 					values_series_wi = pd.Series(param_wi.value, index=idx_wi)
@@ -758,7 +782,7 @@ class WellsGroup(ScheduleBase):
 					})
 				else:
 					cashflow_dict.update({
-						'const_value':param_value * values_series_wi,
+						'const_value':param_value * freq_conv *  values_series_wi,
 						'periods':gparam.periods
 					})
 
