@@ -1,3 +1,3 @@
 # Weiner Module 
 
-::: dcapy.weiner
+::: dcapy.wiener

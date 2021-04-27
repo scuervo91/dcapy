@@ -13,14 +13,14 @@ from .timeconverter import list_freq, converter_factor, time_converter_matrix, c
 
 
 def bsw_to_wor(bsw):
-    assert isinstance(bsw,(int,float,np.ndarray,pd.Series))
+    assert isinstance(bsw,(int,float,np.ndarray,pd.Series,list))
     bsw = np.atleast_1d(bsw)
     assert np.all((bsw>=0)&(bsw<=1))
     wor = bsw/(1-bsw)
     return wor 
 
 def wor_to_bsw(wor):
-    assert isinstance(wor,(int,float,np.ndarray,pd.Series))
+    assert isinstance(wor,(int,float,np.ndarray,pd.Series,list))
     wor = np.atleast_1d(wor)
     assert np.all(wor>=0)
     bsw = wor/(wor+1)
