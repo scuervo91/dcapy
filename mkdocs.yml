@@ -28,6 +28,7 @@ nav:
       - Arps Basics: tutorial/1a-Tutorial-Arps_basic_dca.md
       - Arps Class: tutorial/1b-Tutorial-Arps_Class/1b-Tutorial-Arps_Class.md
       - Wor Basis&Class: tutorial/1c-Tutorial-Wor_basic.md
+      - Probabilistic Class: tutorial/1d-Tutorial-Probabilistic/1d-Tutorial_Probabilistic_Variables.md
 
 
 repo_url: https://github.com/orkahub/dcapy

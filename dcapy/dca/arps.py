@@ -293,6 +293,8 @@ class Arps(BaseModel,DCA):
         Returns:
             np.array: Array if qi
         """
+        if seed is None:
+            seed = self.seed
         if isinstance(self.qi,ProbVar):
             return self.qi.get_sample(size=size, ppf=ppf, seed=seed)
         else:
@@ -309,6 +311,8 @@ class Arps(BaseModel,DCA):
         Returns:
             np.array: Array if di
         """
+        if seed is None:
+            seed = self.seed
         if isinstance(self.di,ProbVar):
             return self.di.get_sample(size=size, ppf=ppf, seed=seed)
         else:
@@ -325,6 +329,8 @@ class Arps(BaseModel,DCA):
         Returns:
             np.array: Array if b
         """
+        if seed is None:
+            seed = self.seed
         if isinstance(self.b,ProbVar):
             return self.b.get_sample(size=size, ppf=ppf, seed=None)
         else:
@@ -616,7 +622,7 @@ class Arps(BaseModel,DCA):
     def plot(self, start:Union[float,date]=None, end:Union[float,date]=None,
              freq_input:str='D',freq_output:str='M',rate_limit:float=None,
              cum_limit:float=None,iter:int=1,ppf=None,ax=None,rate_kw:dict={},cum_kw:dict={},
-             ad_kw:dict={},cum:bool=False,anomaly:float=False, **kwargs):
+             ad_kw:dict={},cum:bool=False,anomaly:float=False, seed=None, **kwargs):
         """plot plot. Make a Plot in a Matplotlib axis of the rate forecast. 
          Optionally plot the cumulative curve in a second vertical axis.
 
@@ -638,7 +644,7 @@ class Arps(BaseModel,DCA):
         """
         f = self.forecast(start=start, end=end, 
                             freq_input=freq_input,freq_output=freq_output,
-                            rate_limit=rate_limit, cum_limit=cum_limit, iter=iter, ppf=ppf)
+                            rate_limit=rate_limit, cum_limit=cum_limit, iter=iter, ppf=ppf, seed=seed)
         #Create the Axex
         dax= ax or plt.gca()
 
