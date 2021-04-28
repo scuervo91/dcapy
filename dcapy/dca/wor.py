@@ -189,8 +189,7 @@ class Wor(BaseModel,DCA):
         wor = water / oil
         
         #Estimate delta time
-        delta_time = np.gradient(time).astype('int64')
-        
+        delta_time = np.array(np.gradient(time),dtype='timedelta64[D]').astype('int64')
         #volume and cum
         oil_vol = oil * delta_time
         oil_cum = np.cumsum(oil_vol)
@@ -218,7 +217,6 @@ class Wor(BaseModel,DCA):
         #Model 
         mod = smf.ols(formula = formula, data = data)
         res = mod.fit()
-        
         bsw_mean = wor_to_bsw(np.exp(res.params['Intercept']))
         
         # TODO: Check how to convert the standard deviation from the WOR interception to BSW Units
