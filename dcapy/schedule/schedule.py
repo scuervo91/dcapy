@@ -9,7 +9,7 @@ import yaml
 import json
 #Local Imports
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
-from .cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
+from ..cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
 
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
 # the input dca is a subclass of DCA. 
@@ -195,7 +195,7 @@ class Period(ScheduleBase):
 						'name':f'{param.name}_{csh_name}',
 						'start':_forecast_i.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.min(),
 						'end':_forecast_i.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.max(),
-						'freq_output':freq_output,'freq_input':self.freq_input
+						'freq_output':freq_output,'freq_input':freq_output
 					})
 					p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 					steps = len(p_range)
@@ -433,7 +433,7 @@ class Scenario(ScheduleBase):
 					'name':gparam.name,
 					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
 					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
-					'freq_output':freq_output
+					'freq_output':freq_output, 'freq_input':freq_output
 				})
 				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 				steps = len(p_range)
@@ -588,7 +588,7 @@ class Well(ScheduleBase):
 					'name':gparam.name,
 					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
 					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
-					'freq_output':freq_output
+					'freq_output':freq_output, 'freq_input':freq_output
 				})
 				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 				steps = len(p_range)
@@ -754,7 +754,7 @@ class WellsGroup(ScheduleBase):
 					'name':gparam.name,
 					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
 					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
-					'freq_output':freq_output
+					'freq_output':freq_output, 'freq_input':freq_output
 				})
 				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
 				steps = len(p_range)

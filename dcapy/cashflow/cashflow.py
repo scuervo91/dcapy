@@ -36,7 +36,7 @@ class CashFlow(BaseModel):
     start : Union[int,date] = Field(...)
     end : Union[int,date] = Field(...)
     periods : Optional[int] = Field(None, ge=-1)
-    freq_output: Literal['M','D','A'] = Field('M')
+    freq_output: Optional[Literal['M','D','A']] = Field(None)
     freq_input: Literal['M','D','A'] = Field('M')
     chgpts: Optional[ChgPts] = Field(None)
 
@@ -57,22 +57,24 @@ class CashFlow(BaseModel):
         arbitrary_types_allowed = True
         validate_assignment = True
         
-    def get_cashflow(self,freq_output=None):
+    def get_cashflow(self,freq_output=None, agg='sum'):
         #Get the date format according the frequency specified
         if freq_output is None:
-            freq_output = self.freq_output
-
-        c = converter_factor(self.freq_input,self.freq_output)
+            if self.freq_output is None:
+                freq_output = self.freq_input
+            else:
+                freq_output = self.freq_output
+        c = converter_factor(self.freq_input,freq_output)
         #Create the timeSeries either with dates or integers
         if isinstance(self.const_value, list):
             periods = len(self.const_value)
         if self.periods:
             if self.periods < 0: # When the cashflow is at the end when abandoning a well
-                prng = pd.period_range(start=self.end, periods=abs(self.periods), freq=self.freq_output) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
+                prng = pd.period_range(start=self.end, periods=abs(self.periods), freq=self.freq_input) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
             else:   
-                prng = pd.period_range(start=self.start, periods=self.periods, freq=self.freq_output) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
+                prng = pd.period_range(start=self.start, periods=self.periods, freq=self.freq_input) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
         else:
-            prng = pd.period_range(start=self.start, end=self.end, periods=self.periods, freq=self.freq_output) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
+            prng = pd.period_range(start=self.start, end=self.end, periods=self.periods, freq=self.freq_input) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
         periods = len(prng)
         if not isinstance(self.const_value, list):
             const_value = [self.const_value] * periods
@@ -82,7 +84,7 @@ class CashFlow(BaseModel):
         #assign each index to corresponding cashflow time
         if self.chgpts:
 
-            fmt = freq_format[self.freq_output]
+            fmt = freq_format[freq_output]
 
             for i in zip(self.chgpts.date,self.chgpts.value):
                 idx = i[0].strftime(fmt) if isinstance(i[0],date) else i[0]
@@ -96,9 +98,28 @@ class CashFlow(BaseModel):
         #output frequency to Annual, then a groupby-sum operation will be performed to get 
         #the desired period of time
         if isinstance(self.start,date):
-            time_series = time_series.to_timestamp().to_period(freq_output).groupby(level=0).agg('sum')
+            time_series = time_series.to_timestamp().to_period(freq_output).groupby(level=0).agg(agg)
 
         return time_series
+    
+    def irr(self,freq_output=None):
+
+        csh = self.get_cashflow(freq_output=freq_output)
+
+        irr = npf.irr(csh.values)
+
+        return irr
+
+    def npv(self, rates, freq_output=None):
+
+        rates = np.atleast_1d(rates)
+        csh = self.get_cashflow(freq_output=freq_output)
+
+        npv_list = []
+        for i in rates:
+            npv_i = npf.npv(i,csh.values)
+            npv_list.append(npv_i)
+        return pd.DataFrame({'npv':npv_list}, index=rates)
 
 
 class CashFlowParams(BaseModel):
@@ -288,7 +309,7 @@ class CashFlowModel(BaseModel):
         
         return pd.concat([gr_cash,gr_fcf],axis=0)
     
-    def plot(self, freq_output=None, ax=None, cum=False,bar_kw={}, format='k',fmt='${:,.0f}'):
+    def plot(self, freq_output=None, ax=None, cum=False,bar_kw={}, format='k',fmt='${:,.1f}'):
 
         def_bar_kw = {
         'palette': {
@@ -317,7 +338,7 @@ class CashFlowModel(BaseModel):
         
         #Create the Axex
         grax= ax or plt.gca()
-        sns.barplot(data=cashflows, x='index', y='value', hue='cash',ax=grax,**def_bar_kw)
+        sns.barplot(data=cashflows, x='index', y='value', hue='cash',ax=grax,**bar_kw)
 
         ticks = grax.get_yticks() 
         grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
