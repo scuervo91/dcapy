@@ -13,7 +13,7 @@ from typing import Union, List, Optional
 #Local Imports
 from .dca import DCA, ProbVar
 from .timeconverter import list_freq, converter_factor, time_converter_matrix, check_value_or_prob, FreqEnum
-from ..filters import zscore
+from ..filters import zscore, exp_wgh_avg
 
 def arps_exp_rate(time_array:np.ndarray,qi:float,di:float)->np.ndarray:
     """arps_exp_rate Calculate the rate of Exponential, b=0, Arps Declination
@@ -537,7 +537,7 @@ class Arps(BaseModel,DCA):
         return _forecast_df.dropna(axis=0,subset=['oil_rate'])
 
     def fit(self,df:pd.DataFrame=None,time:Union[str,np.ndarray,pd.Series]=None,
-            rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={},prob=False):
+            rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={},prob=False, beta=0):
         """fit a production time series to a parameterized Arps Ecuation. Optionally,
         a anomaly detection filter can be passed. It returns an Arps Instance with the fitted
         attributes.
@@ -550,19 +550,21 @@ class Arps(BaseModel,DCA):
             filter ([type], optional): [description]. Defaults to None.
             kw_filter (dict, optional): [description]. Defaults to {}.
             prob (bool, optional): [description]. Defaults to False.
-
+            beta (float). Beta parameter to estimate the exponential weighted average
         Returns:
             [type]: [description]
         """
         # TODO: Add the option to start the cumulative with an Initial Value different a 0
         #Check inputs
         x = df[time].values if isinstance(time,str) else time 
-        y = df[rate].values if isinstance(rate,str) else rate
-        
+        yb = df[rate].values if isinstance(rate,str) else rate
+        #Expotential weighted average. If beta is 1 there's no effect
+        y = exp_wgh_avg(yb,beta)
+
         #Keep production greater than 0
-        zeros_filter_array = np.zeros(x.shape)
-        zeros_filter_array[y<=0] == 1
-        
+        zeros_filter_array = np.zeros(y.shape)
+        zeros_filter_array[y==0] = 1
+
         #Apply filter 
         anomaly_filter_array = np.zeros(x.shape)
         if filter is not None:
@@ -617,7 +619,7 @@ class Arps(BaseModel,DCA):
             self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],(np.datetime64,date)) else x[total_filter==0][0]
             self.b = b
             
-        return pd.DataFrame({'time':x,'oil_rate':y,'filter':total_filter})
+        return pd.DataFrame({'time':x,'oil_rate_average':y,'oil_rate':yb,'filter':total_filter})[1:]
         
     def plot(self, start:Union[float,date]=None, end:Union[float,date]=None,
              freq_input:str='D',freq_output:str='M',rate_limit:float=None,

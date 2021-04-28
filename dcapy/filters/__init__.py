@@ -1,1 +1,1 @@
-from .filters import zscore
+from .filters import zscore, exp_wgh_avg

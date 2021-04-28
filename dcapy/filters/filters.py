@@ -48,6 +48,21 @@ def zscore(x:np.ndarray,y:np.ndarray,thld:float=2)->np.ndarray:
     index[abs_zscore>thld] = 1
     
     return index
+
+
+def exp_wgh_avg(y,beta):
+
+    yw = np.zeros(y.shape[0])
+    
+    for i,r in enumerate(y):
+        if i>0:
+            yw[i] = (beta*yw[i-1] + (1-beta)*y[i])
+            
+    bias_correction = 1 - np.power(beta,np.arange(len(yw)))
+    
+    y = np.nan_to_num(yw / bias_correction)
+    
+    return y
     
      
     
