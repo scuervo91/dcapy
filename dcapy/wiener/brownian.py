@@ -15,7 +15,8 @@ class Weiner(BaseModel):
     steps: int = Field(1, gt=0)
     processes: int = Field(1, gt=0)
     generator: ProbVar = Field(ProbVar())
-    freq: Literal['M','D','A'] = Field('D')
+    freq_input: Literal['M','D','A'] = Field('D')
+    freq_output: Literal['M','D','A'] = Field('D')
 
     class Config:
         arbitrary_types_allowed = True
@@ -57,7 +58,7 @@ class Brownian(Weiner):
         validate_assignment = True
         extra = Extra.forbid
 
-    def generate(self,steps=None,processes=None, freq_output='D',interval=None, seed=None):
+    def generate(self,steps=None,processes=None, freq_output=None,interval=None, seed=None):
         """brownian_motion [summary]
 
         Args:
@@ -75,6 +76,12 @@ class Brownian(Weiner):
  
         if processes is None:
             processes = self.processes    
+
+        if freq_output is None:
+            if self.freq_output is None:
+                freq_output = self.freq_input
+            else:
+                freq_output = self.freq_output
             
         if interval is not None:
             assert all([interval>=0,interval<=1])
@@ -87,7 +94,7 @@ class Brownian(Weiner):
         w[:,0] = self.initial_condition
 
         # Time Step size
-        dt = converter_factor(self.freq,freq_output)
+        dt = converter_factor(self.freq_input,freq_output)
 
         #Drift for the Brownian Process
         mu = self.drift * dt       
@@ -109,7 +116,7 @@ class GeometricBrownian(Weiner):
         validate_assignment = True
         extra = Extra.forbid
 
-    def generate(self,steps=None,processes=None, freq_output='D',interval=None, seed=None):
+    def generate(self,steps=None,processes=None, freq_output=None,interval=None, seed=None):
         """geometric_brownian_motion [summary]
 
         Args:
@@ -127,6 +134,12 @@ class GeometricBrownian(Weiner):
  
         if processes is None:
             processes = self.processes    
+
+        if freq_output is None:
+            if self.freq_output is None:
+                freq_output = self.freq_input
+            else:
+                freq_output = self.freq_output
  
         if interval is not None:
             assert all([interval>=0,interval<=1])
@@ -139,7 +152,7 @@ class GeometricBrownian(Weiner):
         w[:,0] = self.initial_condition
         
         # Time Step size
-        dt = converter_factor(self.freq,freq_output)
+        dt = converter_factor(self.freq_input,freq_output)
         
         #Drift for the Brownian Process
         mu = self.drift * dt
@@ -166,7 +179,7 @@ class MeanReversion(Weiner):
         validate_assignment = True
         extra = Extra.forbid
         
-    def generate(self,steps=None,processes=None, freq_output='D',interval=None, seed=None):
+    def generate(self,steps=None,processes=None, freq_output=None,interval=None, seed=None):
         """mean_reversion [summary]
 
         Args:
@@ -181,6 +194,12 @@ class MeanReversion(Weiner):
  
         if processes is None:
             processes = self.processes    
+
+        if freq_output is None:
+            if self.freq_output is None:
+                freq_output = self.freq_input
+            else:
+                freq_output = self.freq_output
  
         epsilon = self.weiner_generator(steps,processes, seed=seed)
         
@@ -189,7 +208,7 @@ class MeanReversion(Weiner):
         w[:,0] = self.initial_condition
         
         # Time Step size
-        dt = converter_factor(self.freq,freq_output)
+        dt = converter_factor(self.freq_input,freq_output)
         
         m = self.m 
         eta = self.eta

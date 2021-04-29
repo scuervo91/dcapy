@@ -313,8 +313,8 @@ cashflow_params:
         loc: 0.
         scale: 13.13
     m: 46.77
-    eta: 0.112652 
-    freq: A
+    eta: 0.112653 
+    freq_input: A
   wi: 0.92
 - name: buy
   periods: 1
