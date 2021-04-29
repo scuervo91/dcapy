@@ -538,7 +538,7 @@ class Arps(BaseModel,DCA):
 
     def fit(self,df:pd.DataFrame=None,time:Union[str,np.ndarray,pd.Series]=None,
             rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={},prob=False, beta=0):
-        """fit a production time series to a parameterized Arps Ecuation. Optionally,
+        """fit fit a production time series to a parameterized Arps Ecuation. Optionally,
         a anomaly detection filter can be passed. It returns an Arps Instance with the fitted
         attributes.
 
@@ -550,10 +550,13 @@ class Arps(BaseModel,DCA):
             filter ([type], optional): [description]. Defaults to None.
             kw_filter (dict, optional): [description]. Defaults to {}.
             prob (bool, optional): [description]. Defaults to False.
-            beta (float). Beta parameter to estimate the exponential weighted average
+            beta (int, optional): [description]. Defaults to 0.
+
         Returns:
             [type]: [description]
         """
+        
+
         # TODO: Add the option to start the cumulative with an Initial Value different a 0
         #Check inputs
         x = df[time].values if isinstance(time,str) else time 
