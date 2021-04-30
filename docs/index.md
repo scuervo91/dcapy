@@ -14,6 +14,10 @@ The key features are:
 + **Deterministic/Probabilistic**: Add probabilistic variables to add a risk analysis to both simple forecast and schedules. Automatically reschedule start production depending on the callbacks.
 + **Data Validation**: Dcapy uses Pydantic to make data validations when creating new instances
 
+## Schema
+![dcapy_schema](dcaSchema.png)
+
+
 ## Requirements
 
 + Python 3.8+ 
