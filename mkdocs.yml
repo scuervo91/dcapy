@@ -35,6 +35,8 @@ nav:
       - Cashflow Basics: tutorial/2a-Tutorial_Cashflow_basics/2a-Cashflow Basics.md
     - Wiener Proccesses:
       - Wiener Proccesses: tutorial/3a-Tutorial-Wiener/3-Wiener_procces.md
+    - Forecast Scheduling:
+      - Introduction: tutorial/4a-Tutorial_Scheduling_intro.md
 
 repo_url: https://github.com/orkahub/dcapy
 repo_name: orkahub/dcapy
@@ -42,3 +44,6 @@ repo_name: orkahub/dcapy
 plugins:
   - search
   - mkdocstrings
+
+markdown_extensions:
+  - admonition
