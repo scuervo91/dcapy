@@ -49,7 +49,7 @@ class ScheduleBase(BaseModel):
 		else:
 			raise ValueError('Cashflow has not been defined')
   
-	def irr(self, freq_output:str='A'):
+	def irr(self, freq_output:str=None):
 		return irr_cashflows(self.cashflow, freq_output)
 
 	def to_file(self, file:str, format='yaml'):
