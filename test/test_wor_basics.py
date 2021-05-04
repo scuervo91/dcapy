@@ -5,7 +5,7 @@ from pandas.testing import assert_frame_equal
 import os
 from datetime import date
 from dcapy import dca
-from dcapy.models import Period
+from dcapy.schedule import Period
 
 class TestArpsBasic(unittest.TestCase):
     def setUp(self):
