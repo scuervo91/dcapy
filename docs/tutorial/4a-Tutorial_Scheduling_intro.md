@@ -31,3 +31,6 @@ In the case of the above diagram you could, for example, evaluate the next produ
     *Well-1/Scenario-2 & Well-2/Scenario1*
     *Well-1/Scenario-1 & Well-2/Scenario2*
     *Well-1/Scenario-2 & Well-2/Scenario2*
+
+
+Due to the ammount of variables that can be set on a model, it is convinient to have a way of defining a model through a file using specific format so you could save and share. By taking advantage of `Pydantic` validation workflows we can define a YML file to to easily set up a model. In a Python workflow a YML file can be converted into a dictionary and then create the apropiate instance to start evaluating. 
