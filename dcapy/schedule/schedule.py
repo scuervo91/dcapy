@@ -346,11 +346,12 @@ class Scenario(ScheduleBase):
 
 		scenario_forecast = pd.concat(list_forecast, axis=0)
 		scenario_forecast['scenario'] = self.name
+		fr_freq = scenario_forecast.index.freqstr[0]
 
 		if isinstance(scenario_forecast.index[0],pd.Period):
-			self.forecast = Forecast(freq=freq_output,**scenario_forecast.to_timestamp().reset_index().to_dict(orient='list'))
+			self.forecast = Forecast(freq=fr_freq,**scenario_forecast.to_timestamp().reset_index().to_dict(orient='list'))
 		else:
-			self.forecast = Forecast(freq=freq_output,**scenario_forecast.reset_index().to_dict(orient='list'))
+			self.forecast = Forecast(freq=fr_freq,**scenario_forecast.reset_index().to_dict(orient='list'))
 
 		return scenario_forecast
 
@@ -531,10 +532,11 @@ class Well(ScheduleBase):
    
 		well_forecast = pd.concat(list_forecast, axis=0)
 		well_forecast['well'] = self.name
+		fr_freq = well_forecast.index.freqstr[0]
 		if isinstance(well_forecast.index[0],pd.Period):
-			self.forecast = Forecast(freq=freq_output,**well_forecast.to_timestamp().reset_index().to_dict(orient='list'))
+			self.forecast = Forecast(freq=fr_freq,**well_forecast.to_timestamp().reset_index().to_dict(orient='list'))
 		else:
-			self.forecast = Forecast(freq=freq_output,**well_forecast.reset_index().to_dict(orient='list'))
+			self.forecast = Forecast(freq=fr_freq,**well_forecast.reset_index().to_dict(orient='list'))
 
 		return well_forecast
 
@@ -685,10 +687,11 @@ class WellsGroup(ScheduleBase):
 			list_forecast.append(_f)
    
 		wells_forecast = pd.concat(list_forecast, axis=0)
+		fr_freq = wells_forecast.index.freqstr[0]
 		if isinstance(wells_forecast.index[0],pd.Period):
-			self.forecast = Forecast(freq=freq_output,**wells_forecast.to_timestamp().reset_index().to_dict(orient='list'))
+			self.forecast = Forecast(freq=fr_freq,**wells_forecast.to_timestamp().reset_index().to_dict(orient='list'))
 		else:
-			self.forecast = Forecast(freq=freq_output,**wells_forecast.reset_index().to_dict(orient='list'))
+			self.forecast = Forecast(freq=fr_freq,**wells_forecast.reset_index().to_dict(orient='list'))
 
 		return wells_forecast
 
