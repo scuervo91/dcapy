@@ -54,5 +54,5 @@ jobs:
       - name: Run tests
         run: |
           source .venv/bin/activate
-          python -m unittest/
+          poetry run python -m unittest discover/
           coverage report
