@@ -46,7 +46,6 @@ repo_name: scuervo91/dcapy
 
 plugins:
   - search
-  - mkdocstrings
 
 markdown_extensions:
   - admonition
