@@ -479,7 +479,7 @@ class Arps(BaseModel,DCA):
         )
         _forecast_df.index.name='date'
         for i in _forecast_df['iteration'].unique():
-            _forecast_df.loc[_forecast_df['iteration']==i,'oil_volume'] = np.gradient(_forecast_df.loc[_forecast_df['iteration']==i,'oil_cum'].values)
+            _forecast_df.loc[_forecast_df['iteration']==i,'oil_volume'] = np.gradient(_forecast_df.loc[_forecast_df['iteration']==i,'oil_cum'].fillna(0).values)
                 
         #Water Rate
         if any([i is not None for i in [self.fluid_rate,self.bsw,self.wor]]):

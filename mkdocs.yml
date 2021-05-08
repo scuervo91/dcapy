@@ -37,10 +37,12 @@ nav:
       - Wiener Proccesses: tutorial/3a-Tutorial-Wiener/3-Wiener_procces.md
     - Forecast Scheduling:
       - Introduction: tutorial/4a-Tutorial_Scheduling_intro.md
-      - Period Class : tutorial/4b-Tutorial-Period/1b-Tutorial_Period.md
+      - Period Class : tutorial/4b-Tutorial_Period/4b-Tutorial_Period.md
+      - Scenario Class : tutorial/4c-Tutorial_Scenario/4c-Tutorial_Scenario.md
+      - Wells Class : tutorial/4c-Tutorial_Wells/4c-Tutorial_Wells.md
 
-repo_url: https://github.com/orkahub/dcapy
-repo_name: orkahub/dcapy
+repo_url: https://github.com/scuervo91/dcapy
+repo_name: scuervo91/dcapy
 
 plugins:
   - search

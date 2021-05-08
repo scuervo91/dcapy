@@ -124,11 +124,9 @@ class CashFlow(BaseModel):
 
 class CashFlowParams(BaseModel):
     name : str = Field(...)
-    #const_value : Optional[Union[ProbVar,List[float],float]] = Field(None)
     wi : Union[ProbVar,List[float],float,List[ChgPts],ChgPts,Brownian,MeanReversion,GeometricBrownian] = Field(1.)
     periods : Optional[int] = Field(None, ge=-1)
     value : Union[ProbVar,List[float],float,List[ChgPts],ChgPts,Brownian,MeanReversion,GeometricBrownian] = Field(...)
-    #array_values : Optional[Union[Weiner,List[ChgPts],ChgPts]] = Field(None)
     target : Literal['income','opex','capex'] = Field(...)
     multiply : Optional[str] = Field(None)
     agg : Literal['sum','mean'] = Field('mean')

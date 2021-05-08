@@ -389,11 +389,12 @@ class Scenario(ScheduleBase):
 
 		cashflow_models = [CashFlowModel(name=f'{self.name}_{i}') for i in range(n)]
 		list_periods_errors = []
+		pass_cashflow_params = []     #Cashflow to pass to periods
+		general_cashflow_params = []   #General cashflow for scenario
 		for p in _periods:
 			#if self.periods[p].cashflow_params is None:
 			if self.cashflow_params:
-				pass_cashflow_params = []     #Cashflow to pass to periods
-				general_cashflow_params = []   #General cashflow for scenario
+
 				for i in self.cashflow_params:
 					if i.general:
 						general_cashflow_params.append(i)
@@ -555,10 +556,10 @@ class Well(ScheduleBase):
 		if ppf is None:
 			ppf = self.ppf
 
+		pass_cashflow_params = []     #Cashflow to pass to periods
+		general_cashflow_params = []   #General cashflow for scenario
 		for s in _scenarios:
 			if self.cashflow_params:
-				pass_cashflow_params = []     #Cashflow to pass to periods
-				general_cashflow_params = []   #General cashflow for scenario
 				for i in self.cashflow_params:
 					if i.general:
 						general_cashflow_params.append(i)
@@ -710,10 +711,11 @@ class WellsGroup(ScheduleBase):
    
 		list_cashflows = []
 		len_cashflows = []
+		pass_cashflow_params = []     #Cashflow to pass to periods
+		general_cashflow_params = []   #General cashflow for scenario
 		for w in _wells:
 			if self.cashflow_params:
-				pass_cashflow_params = []     #Cashflow to pass to periods
-				general_cashflow_params = []   #General cashflow for scenario
+
 				for i in self.cashflow_params:
 					if i.general:
 						general_cashflow_params.append(i)
