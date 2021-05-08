@@ -39,7 +39,7 @@ nav:
       - Introduction: tutorial/4a-Tutorial_Scheduling_intro.md
       - Period Class : tutorial/4b-Tutorial_Period/4b-Tutorial_Period.md
       - Scenario Class : tutorial/4c-Tutorial_Scenario/4c-Tutorial_Scenario.md
-      - Wells Class : tutorial/4c-Tutorial_Wells/4c-Tutorial_Wells.md
+      - Wells Class : tutorial/4d-Tutorial_Wells/4d-Tutorial_Wells.md
 
 repo_url: https://github.com/scuervo91/dcapy
 repo_name: scuervo91/dcapy
