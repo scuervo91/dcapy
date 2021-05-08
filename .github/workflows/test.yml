@@ -51,5 +51,7 @@ jobs:
       #----------------------------------------------
       #              run test suite   
       #----------------------------------------------
-      - name: Run tests
+      - name: Activate env
+        run: source .venv/bin/activate
+      - name: Activate env
         run: python -m unittest discover
