@@ -18,11 +18,11 @@ theme:
 nav:
   - Home: index.md
   - Code Reference:
-    - dca: dca-reference.md
-    - filters: filters-reference.md
-    - cashflow: schedule-reference.md 
-    - cashflow: cashflow-reference.md 
-    - weiner: wiener-reference.md 
+    #- dca: dca-reference.md
+    #- filters: filters-reference.md
+    #- cashflow: schedule-reference.md 
+    #- cashflow: cashflow-reference.md 
+    #- weiner: wiener-reference.md 
   - Tutorial:
     - Intro: tutorial/1-Intro.md
     - Arps Declination:
