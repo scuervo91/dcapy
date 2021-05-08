@@ -1,7 +1,7 @@
 name: fdp_field
 wells:
-  LP2:
-    name: LP2
+  DC2:
+    name: DC2
     scenarios:
       base:
         name: base
@@ -23,8 +23,8 @@ wells:
               periods: -1
               target: capex
               value: -200000.0
-  LP3:
-    name: LP3
+  DC3:
+    name: DC3
     scenarios:
       base:
         name: base
@@ -46,8 +46,8 @@ wells:
               periods: -1
               target: capex
               value: -200000.0
-  LP4:
-    name: LP4
+  DC4:
+    name: DC4
     scenarios:
       base:
         name: base
@@ -69,8 +69,8 @@ wells:
               periods: -1
               target: capex
               value: -200000.0
-  LP5:
-    name: LP5
+  DC5:
+    name: DC5
     scenarios:
       base:
         name: base

@@ -3,10 +3,12 @@ import numpy as np
 from datetime import date
 from pandas.testing import assert_frame_equal
 import pandas as pd
+import os 
+import yaml
 
 from dcapy.wiener import Brownian, GeometricBrownian,MeanReversion
 from dcapy.dca import ProbVar
-from dcapy.schedule import Period, Scenario, Well 
+from dcapy.schedule import Period, Scenario, Well, model_from_dict
 from dcapy.cashflow import CashFlowParams
 
 class TestSchedule(unittest.TestCase):
@@ -185,176 +187,195 @@ class TestSchedule(unittest.TestCase):
         
         assert_frame_equal(s2.npv([0.15], freq_rate='A',freq_cashflow='A').reset_index(),pd.DataFrame(r))
         
-        def test_wells(self):
-            #First Period First Scenario
+    def test_wells(self):
+        #First Period First Scenario
 
-            p1a_dict = {
-                'name':'pdp',
-                'dca': {
-                    'ti':'2021-01-01',
-                    'di':0.025,
-                    'freq_di':'M',
-                    'qi':1500,
-                    'b':0,
+        p1a_dict = {
+            'name':'pdp',
+            'dca': {
+                'ti':'2021-01-01',
+                'di':0.025,
+                'freq_di':'M',
+                'qi':1500,
+                'b':0,
+            },
+            'start':'2021-01-01',
+            'end':'2040-01-01',
+            'freq_output':'A',
+            'rate_limit': 300,
+            'cashflow_params':[
+                {
+                    'name':'capex',
+                    'value':{
+                        'date':['2021-01-01'],
+                        'value':[-5000000]
+                        },
+                    'target':'capex'
+                }
+            ]
+        }
+
+        #Second Period First Scenario
+
+        p2a_dict = {
+            'name':'pud',
+            'dca': {
+                'ti':'2022-01-01',
+                'di':0.3,
+                'freq_di':'A',
+                'qi':3000,
+                'b':0,
+            },
+            'start':'2022-01-01',
+            'end':'2040-01-01',
+            'freq_output':'A',
+            'rate_limit': 100,
+            'depends':{'period':'pdp'},
+            'cashflow_params':[
+                {
+                    'name':'wo',
+                    'value':-500000,
+                    'periods':1,
+                    'target':'capex'
                 },
-                'start':'2021-01-01',
-                'end':'2040-01-01',
-                'freq_output':'A',
-                'rate_limit': 300,
-                'cashflow_params':[
-                    {
-                        'name':'capex',
-                        'value':{
-                            'date':['2021-01-01'],
-                            'value':[-5000000]
-                            },
-                        'target':'capex'
-                    }
-                ]
-            }
-
-            #Second Period First Scenario
-
-            p2a_dict = {
-                'name':'pud',
-                'dca': {
-                    'ti':'2022-01-01',
-                    'di':0.3,
-                    'freq_di':'A',
-                    'qi':3000,
-                    'b':0,
+                {
+                    'name':'abandon',
+                    'value':-300000,
+                    'periods':-1,
+                    'target':'capex'
                 },
-                'start':'2022-01-01',
-                'end':'2040-01-01',
-                'freq_output':'A',
-                'rate_limit': 100,
-                'depends':{'period':'pdp'},
-                'cashflow_params':[
-                    {
-                        'name':'wo',
-                        'value':-500000,
-                        'periods':1,
-                        'target':'capex'
-                    },
-                    {
-                        'name':'abandon',
-                        'value':-300000,
-                        'periods':-1,
-                        'target':'capex'
-                    },
-                ]
-            }
-            s1_dict = {
-                'name':'first',
-                'periods':[
-                    p1a_dict,
-                    p2a_dict
-                ],
-            }
-            s1 = Scenario(**s1_dict)
-            
-            #First Period Second Scenario
+            ]
+        }
+        s1_dict = {
+            'name':'first',
+            'periods':[
+                p1a_dict,
+                p2a_dict
+            ],
+        }
+        s1 = Scenario(**s1_dict)
+        
+        #First Period Second Scenario
 
-            p1b_dict = {
-                'name':'pdp',
-                'dca': {
-                    'ti':'2021-01-01',
-                    'di':0.025,
-                    'freq_di':'M',
-                    'qi':1500,
-                    'b':0,
+        p1b_dict = {
+            'name':'pdp',
+            'dca': {
+                'ti':'2021-01-01',
+                'di':0.025,
+                'freq_di':'M',
+                'qi':1500,
+                'b':0,
+            },
+            'start':'2021-01-01',
+            'end':'2040-01-01',
+            'freq_output':'A',
+            'rate_limit': 700,
+            'cashflow_params':[
+                {
+                    'name':'capex',
+                    'value':{
+                        'date':['2021-01-01'],
+                        'value':[-6500000]
+                        },
+                    'target':'capex'
+                }
+            ]
+        }
+
+        #Second Period Second Escenario
+
+        p2b_dict = {
+            'name':'pud',
+            'dca': {
+                'ti':'2022-01-01',
+                'di':0.3,
+                'freq_di':'A',
+                'qi':3000,
+                'b':0,
+            },
+            'start':'2022-01-01',
+            'end':'2040-01-01',
+            'freq_output':'A',
+            'rate_limit': 100,
+            'depends':{'period':'pdp'},
+            'cashflow_params':[
+                {
+                    'name':'wo',
+                    'value':-50000,
+                    'periods':1,
+                    'target':'capex'
                 },
-                'start':'2021-01-01',
-                'end':'2040-01-01',
-                'freq_output':'A',
-                'rate_limit': 700,
-                'cashflow_params':[
-                    {
-                        'name':'capex',
-                        'value':{
-                            'date':['2021-01-01'],
-                            'value':[-6500000]
-                            },
-                        'target':'capex'
-                    }
-                ]
-            }
-
-            #Second Period Second Escenario
-
-            p2b_dict = {
-                'name':'pud',
-                'dca': {
-                    'ti':'2022-01-01',
-                    'di':0.3,
-                    'freq_di':'A',
-                    'qi':3000,
-                    'b':0,
+                {
+                    'name':'abandon',
+                    'value':-300000,
+                    'periods':-1,
+                    'target':'capex'
                 },
-                'start':'2022-01-01',
-                'end':'2040-01-01',
-                'freq_output':'A',
-                'rate_limit': 100,
-                'depends':{'period':'pdp'},
-                'cashflow_params':[
-                    {
-                        'name':'wo',
-                        'value':-50000,
-                        'periods':1,
-                        'target':'capex'
-                    },
-                    {
-                        'name':'abandon',
-                        'value':-300000,
-                        'periods':-1,
-                        'target':'capex'
-                    },
-                ]
-            }
+            ]
+        }
 
-            s2_dict = {
-                'name':'second',
-                'periods':[
-                    p1b_dict,
-                    p2b_dict
-                ],
-            }
-            s2 = Scenario(**s2_dict)
-            
-            well_1 = Well(
-                name = 'well_1',
-                scenarios = [s1,s2],
-                cashflow_params = [
-                    CashFlowParams(
-                        name = 'fix_opex',
-                        value = -5000,   # 5 KUSD per well per month
-                        freq_value = 'M',
-                        target = 'opex',
-                    ),
-                    CashFlowParams(
-                        name = 'var_opex',
-                        value = -10,     # 10 USD per barrel of oil
-                        multiply = 'oil_volume',
-                        target = 'opex',
-                    ),
-                    CashFlowParams(
-                        name = 'Sells',
-                        value = 50,     # 50 USD per barrel of oil
-                        multiply = 'oil_volume',
-                        target = 'income',
-                        wi = 0.94,
-                    )
-                ]
-            )
+        s2_dict = {
+            'name':'second',
+            'periods':[
+                p1b_dict,
+                p2b_dict
+            ],
+        }
+        s2 = Scenario(**s2_dict)
+        
+        well_1 = Well(
+            name = 'well_1',
+            scenarios = [s1,s2],
+            cashflow_params = [
+                CashFlowParams(
+                    name = 'fix_opex',
+                    value = -5000,   # 5 KUSD per well per month
+                    freq_value = 'M',
+                    target = 'opex',
+                ),
+                CashFlowParams(
+                    name = 'var_opex',
+                    value = -10,     # 10 USD per barrel of oil
+                    multiply = 'oil_volume',
+                    target = 'opex',
+                ),
+                CashFlowParams(
+                    name = 'Sells',
+                    value = 50,     # 50 USD per barrel of oil
+                    multiply = 'oil_volume',
+                    target = 'income',
+                    wi = 0.94,
+                )
+            ]
+        )
 
-            well1_forecast = well_1.generate_forecast(freq_output='A')
-            well1_cashflow = well_1.generate_cashflow(freq_output='A')
-            
-            
-            r = {'index': {0: 0.10000000000000009, 1: 0.10000000000000009},
-                'npv': {0: 173707979.0951442, 1: 410346460.74559057},
-                'iteration': {0: 0, 1: 1}}
-            
-            assert_frame_equal(well_1.npv([0.1], freq_rate='A', freq_cashflow='A'),pd.DataFrame(r))
+        well1_forecast = well_1.generate_forecast(freq_output='A')
+        well1_cashflow = well_1.generate_cashflow(freq_output='A')
+        
+        
+        r = {'index': {0: 0.10000000000000009, 1: 0.10000000000000009},
+            'npv': {0: 173707979.0951442, 1: 410346460.74559057},
+            'iteration': {0: 0, 1: 1}}
+        
+        assert_frame_equal(well_1.npv([0.1], freq_rate='A', freq_cashflow='A').reset_index(),pd.DataFrame(r))
+        
+    def test_group_wells(self):
+        workdir = os.path.dirname(__file__)
+        with open(os.path.join(workdir,'data','FDP_example1.yml'),'r') as file:
+            lp_dict = yaml.load(file)
+        
+        lp = model_from_dict(lp_dict)
+        
+        sc = lp.scenarios_maker()
+        
+        fwn= lp.generate_forecast(wells=sc[3],freq_output='A',iter=2, seed=21)
+        
+        cwn= lp.generate_cashflow(wells=sc[3],freq_output='A')
+        
+        r = np.array([-2.9937035e+07,  1.6341351e+08,  2.7990174e+08,  5.5133251e+08,
+            7.0597109e+08,  8.3752614e+08,  8.9858655e+08,  9.3667778e+08,
+            9.8614312e+08,  9.8296585e+08])
+        
+        assert_frame_equal(pd.DataFrame(cwn[0].fcf()['cum_fcf'].values), pd.DataFrame(r))
 
             
