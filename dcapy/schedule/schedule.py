@@ -214,7 +214,6 @@ class Period(ScheduleBase):
 						values_series_wi = param_wi
 					if param.multiply:
 						#Forecast Column name to multiply the param
-
 						#Check if the column exist in the forecast pandas dataframe
 						if param.multiply in _forecast_i.columns:
 							multiply_col = param.multiply

@@ -98,7 +98,7 @@ wells:
       highfr:
         name: highfr
         periods:
-          uppermir:
+          fm1:
             cashflow_params:
             - name: capex
               periods: 1
@@ -115,10 +115,10 @@ wells:
               - 3.0e-05
               ti: '2022-01-01'
             end: '2027-01-01'
-            name: uppermir
+            name: fm1
             rate_limit: 200.0
             start: '2022-01-01'
-          lowermir:
+          fm2:
             cashflow_params:
             - name: capex_wo
               periods: 1
@@ -139,14 +139,14 @@ wells:
               - 5.0e-05
               ti: '2022-01-01'
             depends:
-              period: uppermir
+              period: fm1
             end: '2030-01-01'
-            name: lowermir
+            name: fm2
             start: '2022-01-01'
       mediumfr:
         name: mediumfr
         periods:
-          uppermir:
+          fm1:
             cashflow_params:
             - name: capex_drill
               periods: 1
@@ -163,10 +163,10 @@ wells:
               - 3.0e-06
               ti: '2022-01-01'
             end: '2030-01-01'
-            name: uppermir
+            name: fm1
             rate_limit: 200.0
             start: '2022-01-01'
-          lowermir:
+          fm2:
             cashflow_params:
             - name: capex_wo
               periods: 1
@@ -187,9 +187,9 @@ wells:
               - 5.0e-06
               ti: '2022-01-01'
             depends:
-              period: uppermir
+              period: fm1
             end: '2030-01-01'
-            name: lowermir
+            name: fm2
             start: '2022-01-01'
   well-2:
     name: well-2
@@ -197,7 +197,7 @@ wells:
       highfr:
         name: highfr
         periods:
-          lowermir:
+          fm2:
             cashflow_params:
             - name: capex_drill
               periods: 1
@@ -214,10 +214,10 @@ wells:
               - 5.0e-05
               ti: '2022-01-01'
             end: '2030-01-01'
-            name: lowermir
+            name: fm2
             rate_limit: 200.0
             start: '2022-01-01'
-          uppermir:
+          fm1:
             cashflow_params:
             - name: capex_wo
               periods: 1
@@ -238,14 +238,14 @@ wells:
               - 3.0e-05
               ti: '2022-01-01'
             depends:
-              period: lowermir
+              period: fm2
             end: '2030-01-01'
-            name: uppermir
+            name: fm1
             start: '2022-01-01'
       mediumfr:
         name: mediumfr
         periods:
-          lowermir:
+          fm2:
             cashflow_params:
             - name: capex_drill
               periods: 1
@@ -262,10 +262,10 @@ wells:
               - 5.0e-06
               ti: '2022-01-01'
             end: '2030-01-01'
-            name: lowermir
+            name: fm2
             rate_limit: 200.0
             start: '2022-01-01'
-          uppermir:
+          fm1:
             cashflow_params:
             - name: capex_wo
               periods: 1
@@ -286,9 +286,9 @@ wells:
               - 3.0e-06
               ti: '2022-01-01'
             depends:
-              period: lowermir
+              period: fm2
             end: '2030-01-01'
-            name: uppermir
+            name: fm1
             start: '2022-01-01'
 cashflow_params:
 - name: fix_opex
@@ -319,6 +319,6 @@ cashflow_params:
 - name: buy
   periods: 1
   target: capex
-  value: -7500000
+  value: -15500000
   general: True
 seed: 21
