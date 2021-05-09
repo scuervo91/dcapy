@@ -391,21 +391,19 @@ class Scenario(ScheduleBase):
 		list_periods_errors = []
 		pass_cashflow_params = []     #Cashflow to pass to periods
 		general_cashflow_params = []   #General cashflow for scenario
+		if self.cashflow_params:
+			for i in self.cashflow_params:
+				if i.general:
+					general_cashflow_params.append(i)
+				else:
+					pass_cashflow_params.append(i) 
 		for p in _periods:
 			#if self.periods[p].cashflow_params is None:
-			if self.cashflow_params:
-
-				for i in self.cashflow_params:
-					if i.general:
-						general_cashflow_params.append(i)
-					else:
-						pass_cashflow_params.append(i)
-				
+			if len(pass_cashflow_params)>0:		
 				if self.periods[p].cashflow_params is None:
 					self.periods[p].cashflow_params = pass_cashflow_params
 				else:
 					self.periods[p].cashflow_params.extend(pass_cashflow_params)
-
 			try:
 				if add_name is None:
 					csh_name = self.name
@@ -558,13 +556,14 @@ class Well(ScheduleBase):
 
 		pass_cashflow_params = []     #Cashflow to pass to periods
 		general_cashflow_params = []   #General cashflow for scenario
+		if self.cashflow_params:
+			for i in self.cashflow_params:
+				if i.general:
+					general_cashflow_params.append(i)
+				else:
+					pass_cashflow_params.append(i) 
 		for s in _scenarios:
-			if self.cashflow_params:
-				for i in self.cashflow_params:
-					if i.general:
-						general_cashflow_params.append(i)
-					else:
-						pass_cashflow_params.append(i)      
+			if len(pass_cashflow_params)>0:
 				if self.scenarios[s].cashflow_params is None:
 					self.scenarios[s].cashflow_params = pass_cashflow_params
 				else:
@@ -713,14 +712,14 @@ class WellsGroup(ScheduleBase):
 		len_cashflows = []
 		pass_cashflow_params = []     #Cashflow to pass to periods
 		general_cashflow_params = []   #General cashflow for scenario
+		if self.cashflow_params:
+			for i in self.cashflow_params:
+				if i.general:
+					general_cashflow_params.append(i)
+				else:
+					pass_cashflow_params.append(i)   
 		for w in _wells:
-			if self.cashflow_params:
-
-				for i in self.cashflow_params:
-					if i.general:
-						general_cashflow_params.append(i)
-					else:
-						pass_cashflow_params.append(i)   
+			if len(pass_cashflow_params)>0:
 				if self.wells[w].cashflow_params is None:
 					self.wells[w].cashflow_params = pass_cashflow_params
 				else:
