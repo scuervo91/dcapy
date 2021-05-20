@@ -7,6 +7,7 @@ import numpy as np
 import pyDOE2 as ed
 import yaml
 import json
+from rich.tree import Tree
 #Local Imports
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
 from ..cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
@@ -60,6 +61,12 @@ class ScheduleBase(BaseModel):
 				yaml.safe_dump(json.loads(self.json(exclude_unset=True)), f)
 			if format=='json':
 				f.write(self.json(exclude_unset=True))
+    
+	#def tree(self):
+	#	node_tree = Tree(self.name)
+  
+        
+        
   
 class Period(ScheduleBase):
 	dca : union_classes_dca 
@@ -282,7 +289,10 @@ class Period(ScheduleBase):
 			return list_cashflow_model
 		else:
 			raise ValueError('Either Forecast or Cashflow Params not defined')
-    
+
+	def tree(self):
+		return Tree(self.name)
+  
 class Scenario(ScheduleBase):
 	periods: Union[List[Period],Dict[str,Period]]
 	freq_output: str = Field('D')
@@ -494,6 +504,14 @@ class Scenario(ScheduleBase):
 
 		return cashflow_models
 
+	def tree(self):
+		node_tree = Tree(self.name)
+
+		for p in self.periods:
+			node_tree.add(self.periods[p].tree())
+
+		return node_tree
+
 
 class Well(ScheduleBase):
 	scenarios : Union[List[Scenario],Dict[str,Scenario]]
@@ -652,6 +670,13 @@ class Well(ScheduleBase):
 		self.cashflow = list_cashflows
 
 		return list_cashflows
+
+	def tree(self):
+		node_tree = Tree(self.name)
+
+		for p in self.scenarios:
+			node_tree.add(self.scenarios[p].tree())
+		return node_tree
    
 class WellsGroup(ScheduleBase):
 	wells : Union[List[Well],Dict[str,Well]]
@@ -855,6 +880,13 @@ class WellsGroup(ScheduleBase):
 			scenarios_list.append(esc)
 
 		return scenarios_list
+
+	def tree(self):
+		node_tree = Tree(self.name)
+
+		for p in self.wells:
+			node_tree.add(self.wells[p].tree())
+		return node_tree
    
 def model_from_dict(d:dict):
     
