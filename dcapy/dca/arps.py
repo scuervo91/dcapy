@@ -10,10 +10,15 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pydantic import BaseModel, Field, Extra
 from typing import Union, List, Optional
+from rich.panel import Panel
+from rich.layout import Layout
+from rich.text import Text
+import yaml
 #Local Imports
 from .dca import DCA, ProbVar
 from .timeconverter import list_freq, converter_factor, time_converter_matrix, check_value_or_prob, FreqEnum
 from ..filters import zscore, exp_wgh_avg
+from ..console import console
 
 def arps_exp_rate(time_array:np.ndarray,qi:float,di:float)->np.ndarray:
     """arps_exp_rate Calculate the rate of Exponential, b=0, Arps Declination
@@ -282,7 +287,15 @@ class Arps(BaseModel,DCA):
     #####################################################
     ############## Properties ###########################
     
-            
+    def get_layout(self):
+        text = yaml.dump(self.dict(exclude_unset=True))  
+        
+        panel_text = ':chart_with_downwards_trend: [bold]Arps[/bold]\n' + text
+        panel = Panel.fit(panel_text,title='[bold green]Arps Model[/bold green]')
+        #console.print(layout)
+        return panel
+        
+        
     def get_qi(self,size=None, ppf=None, seed=None):
         """get_qi get the number of qi
 
