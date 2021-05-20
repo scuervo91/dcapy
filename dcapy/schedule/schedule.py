@@ -10,6 +10,7 @@ import json
 #Local Imports
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
 from ..cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
+from ..console import console
 
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
 # the input dca is a subclass of DCA. 
@@ -36,6 +37,7 @@ class ScheduleBase(BaseModel):
 	seed: Optional[int] = Field(None)
 	iter : int = Field(1, ge=1)
 	ppf : Optional[float] = Field(None, ge=0, le=1)
+	description: str = Field(None)
  
 	class Config:
 		arbitrary_types_allowed = True
