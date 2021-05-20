@@ -128,7 +128,7 @@ class Period(ScheduleBase):
 				return [i for i in dates_sr]
 		raise ValueError('There is no any Forecast')
 
-	def generate_cashflow(self, freq_output=None, add_name=None, seed=None, ppf=None):
+	def generate_cashflow(self, freq_output=None, add_name=None, seed=None, ppf=None,add_cash_params:list=None):
 		if freq_output is None:
 			freq_output = self.freq_output
    
@@ -172,13 +172,21 @@ class Period(ScheduleBase):
 			iterate_new_shape = forecast_iterations * np.ones(shapes)
    
 			#Iterate over list of cases
-			#for i in _forecast['iteration'].unique():
+			if self.cashflow_params is None:
+				cashflow_params = []
+			else:
+				cashflow_params = self.cashflow_params.copy()
+			if add_cash_params:
+				cashflow_params.extend(add_cash_params)
+    
+			if len(cashflow_params)==0:
+				raise ValueError('No Cashflow Params are set')
 			for i in range(shapes[0]):
 
 				_forecast_i = _forecast[_forecast['iteration']==iterate_new_shape[i]]
 
 				cashflow_model_dict = {'name':self.name + '_' + str(i)}
-				for param in self.cashflow_params:
+				for param in cashflow_params:
 					#initialize the individual cashflow dict
 
 					if param.target not in cashflow_model_dict.keys():
@@ -368,7 +376,7 @@ class Scenario(ScheduleBase):
 		return np.array(n).max() + 1
 
 
-	def generate_cashflow(self,periods:list = None, freq_output=None, add_name=None, seed=None, ppf=None):
+	def generate_cashflow(self,periods:list = None, freq_output=None, add_name=None, seed=None, ppf=None, add_cash_params:list=None):
 		if freq_output is None:
 			freq_output = self.freq_output
 		#Make filter
@@ -390,25 +398,29 @@ class Scenario(ScheduleBase):
 		list_periods_errors = []
 		pass_cashflow_params = []     #Cashflow to pass to periods
 		general_cashflow_params = []   #General cashflow for scenario
-		if self.cashflow_params:
-			for i in self.cashflow_params:
+  
+		if self.cashflow_params is None:
+			cashflow_params = []
+		else:
+			cashflow_params = self.cashflow_params.copy()
+		if add_cash_params:
+			cashflow_params.extend(add_cash_params)
+
+		if len(cashflow_params)>0:
+			for i in cashflow_params:
 				if i.general:
 					general_cashflow_params.append(i)
 				else:
 					pass_cashflow_params.append(i) 
+		else:	
+			pass_cashflow_params = None
 		for p in _periods:
-			#if self.periods[p].cashflow_params is None:
-			if len(pass_cashflow_params)>0:		
-				if self.periods[p].cashflow_params is None:
-					self.periods[p].cashflow_params = pass_cashflow_params
-				else:
-					self.periods[p].cashflow_params.extend(pass_cashflow_params)
 			try:
 				if add_name is None:
 					csh_name = self.name
 				else:
 					csh_name = add_name + '-' + self.name
-				_cf = self.periods[p].generate_cashflow(freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf)
+				_cf = self.periods[p].generate_cashflow(freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf, add_cash_params=pass_cashflow_params)
 			except Exception as e:
 				print(e)
 				list_periods_errors.append(self.periods[p].name)
@@ -538,7 +550,7 @@ class Well(ScheduleBase):
 
 		return well_forecast
 
-	def generate_cashflow(self, scenarios:Union[list,dict] = None, freq_output=None, add_name=None, seed=None, ppf=None):
+	def generate_cashflow(self, scenarios:Union[list,dict] = None, freq_output=None, add_name=None, seed=None, ppf=None,add_cash_params:list=None):
 		if scenarios:
 			scenarios_list = scenarios if isinstance(scenarios,list) else list(scenarios.keys())
 			_scenarios = [i for i in self.scenarios if i in scenarios_list]
@@ -555,24 +567,27 @@ class Well(ScheduleBase):
 
 		pass_cashflow_params = []     #Cashflow to pass to periods
 		general_cashflow_params = []   #General cashflow for scenario
-		if self.cashflow_params:
-			for i in self.cashflow_params:
+		if self.cashflow_params is None:
+			cashflow_params = []
+		else:
+			cashflow_params = self.cashflow_params.copy()
+		if add_cash_params:
+			cashflow_params.extend(add_cash_params)
+		if len(cashflow_params)>0:
+			for i in cashflow_params:
 				if i.general:
 					general_cashflow_params.append(i)
 				else:
 					pass_cashflow_params.append(i) 
+		else:
+			pass_cashflow_params=None
 		for s in _scenarios:
-			if len(pass_cashflow_params)>0:
-				if self.scenarios[s].cashflow_params is None:
-					self.scenarios[s].cashflow_params = pass_cashflow_params
-				else:
-					self.scenarios[s].cashflow_params.append(pass_cashflow_params)
 			if add_name is None:
 				csh_name = self.name
 			else:
 				csh_name = add_name + '-' + self.name
 			periods = scenarios[s] if isinstance(scenarios,dict) else None
-			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf)
+			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf, add_cash_params=pass_cashflow_params)
 
 			list_cashflows.extend(cash_s)
 
@@ -694,7 +709,7 @@ class WellsGroup(ScheduleBase):
 
 		return wells_forecast
 
-	def generate_cashflow(self, wells:Union[list,dict] = None, freq_output=None, add_name=None, seed=None, ppf=None):
+	def generate_cashflow(self, wells:Union[list,dict] = None, freq_output=None, add_name=None, seed=None, ppf=None, add_cash_params:list=None):
 		if wells:
 			wells_list = wells if isinstance(wells,list) else list(wells.keys())
 			_wells = [i for i in self.wells if i in wells_list]
@@ -711,24 +726,30 @@ class WellsGroup(ScheduleBase):
 		len_cashflows = []
 		pass_cashflow_params = []     #Cashflow to pass to periods
 		general_cashflow_params = []   #General cashflow for scenario
-		if self.cashflow_params:
+  
+		if self.cashflow_params is None:
+			cashflow_params = []
+		else:
+			cashflow_params = self.cashflow_params.copy()
+		if add_cash_params:
+			cashflow_params.extend(add_cash_params)
+   
+		if len(cashflow_params)>0:
 			for i in self.cashflow_params:
 				if i.general:
 					general_cashflow_params.append(i)
 				else:
 					pass_cashflow_params.append(i)   
+		else:
+			pass_cashflow_params = None
+      
 		for w in _wells:
-			if len(pass_cashflow_params)>0:
-				if self.wells[w].cashflow_params is None:
-					self.wells[w].cashflow_params = pass_cashflow_params
-				else:
-					self.wells[w].cashflow_params.extend(pass_cashflow_params)
 			if add_name is None:
 				csh_name = self.name
 			else:
 				csh_name = add_name + '-' + self.name
 			scenarios = wells[w] if isinstance(wells,dict) else None
-			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf)
+			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf, add_cash_params=pass_cashflow_params)
 
 			len_cashflows.append(len(cash_s))
    
