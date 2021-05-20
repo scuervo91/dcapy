@@ -290,8 +290,12 @@ class Period(ScheduleBase):
 		else:
 			raise ValueError('Either Forecast or Cashflow Params not defined')
 
-	def tree(self):
-		return Tree(self.name)
+	def tree(self, style='bold', guide_style='bold',show_emoji=True):
+		emoji = ':chart_with_downwards_trend:'
+		tree_text = emoji+self.name if show_emoji else self.name
+		node_tree = Tree(tree_text, style=style, guide_style=guide_style)
+
+		return node_tree
   
 class Scenario(ScheduleBase):
 	periods: Union[List[Period],Dict[str,Period]]
@@ -504,14 +508,14 @@ class Scenario(ScheduleBase):
 
 		return cashflow_models
 
-	def tree(self):
-		node_tree = Tree(self.name)
+	def tree(self, style='bold', guide_style='bold',show_emoji=True):
+		emoji = ':twisted_rightwards_arrows:'
+		tree_text = emoji+self.name if show_emoji else self.name
+		node_tree = Tree(tree_text, style=style, guide_style=guide_style)
 
 		for p in self.periods:
-			node_tree.add(self.periods[p].tree())
-
+			node_tree.add(self.periods[p].tree(style=style, guide_style=guide_style,show_emoji=show_emoji))
 		return node_tree
-
 
 class Well(ScheduleBase):
 	scenarios : Union[List[Scenario],Dict[str,Scenario]]
@@ -671,12 +675,15 @@ class Well(ScheduleBase):
 
 		return list_cashflows
 
-	def tree(self):
-		node_tree = Tree(self.name)
+	def tree(self, style='bold', guide_style='bold',show_emoji=True):
+		emoji = ':tokyo_tower:'
+		tree_text = emoji+self.name if show_emoji else self.name
+		node_tree = Tree(tree_text, style=style, guide_style=guide_style)
 
 		for p in self.scenarios:
-			node_tree.add(self.scenarios[p].tree())
+			node_tree.add(self.scenarios[p].tree(style=style, guide_style=guide_style,show_emoji=show_emoji))
 		return node_tree
+
    
 class WellsGroup(ScheduleBase):
 	wells : Union[List[Well],Dict[str,Well]]
@@ -881,11 +888,13 @@ class WellsGroup(ScheduleBase):
 
 		return scenarios_list
 
-	def tree(self):
-		node_tree = Tree(self.name)
+	def tree(self, style='bold', guide_style='bold',show_emoji=True):
+		emoji = ':factory:'
+		tree_text = emoji+self.name if show_emoji else self.name
+		node_tree = Tree(tree_text, style=style, guide_style=guide_style)
 
 		for p in self.wells:
-			node_tree.add(self.wells[p].tree())
+			node_tree.add(self.wells[p].tree(style=style, guide_style=guide_style,show_emoji=show_emoji))
 		return node_tree
    
 def model_from_dict(d:dict):
