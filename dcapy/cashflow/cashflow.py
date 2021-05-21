@@ -1,16 +1,16 @@
 from dcapy.dca.dca import ProbVar
 from pydantic import BaseModel, Field, validator
-from typing import Union, List, Optional, Literal
+from typing import Union, List, Optional
 from datetime import date
 import pandas as pd
 import numpy as np
 import numpy_financial as npf
 import matplotlib.pyplot as plt 
 import seaborn as sns
-
+from enum import Enum
 from ..dca import converter_factor
 from ..wiener import Brownian, MeanReversion, GeometricBrownian
-
+from ..dca import FreqEnum
 
 freq_format={
     'M':'%Y-%m',
@@ -36,8 +36,8 @@ class CashFlow(BaseModel):
     start : Union[int,date] = Field(...)
     end : Union[int,date] = Field(...)
     periods : Optional[int] = Field(None, ge=-1)
-    freq_output: Optional[Literal['M','D','A']] = Field(None)
-    freq_input: Literal['M','D','A'] = Field('M')
+    freq_output: FreqEnum = Field(None)
+    freq_input: FreqEnum = Field('M')
     chgpts: Optional[ChgPts] = Field(None)
 
     @validator('end')
@@ -121,19 +121,28 @@ class CashFlow(BaseModel):
             npv_list.append(npv_i)
         return pd.DataFrame({'npv':npv_list}, index=rates)
 
+class TargetEnum(str, Enum):
+    income = 'income'
+    opex = 'opex'
+    capex = 'capex'
+    
+class AggEnum(str, Enum):
+    sum = 'sum'
+    mean = 'mean'
+
 
 class CashFlowParams(BaseModel):
     name : str = Field(...)
     wi : Union[ProbVar,List[float],float,List[ChgPts],ChgPts,Brownian,MeanReversion,GeometricBrownian] = Field(1.)
     periods : Optional[int] = Field(None, ge=-1)
     value : Union[ProbVar,List[float],float,List[ChgPts],ChgPts,Brownian,MeanReversion,GeometricBrownian] = Field(...)
-    target : Literal['income','opex','capex'] = Field(...)
+    target : TargetEnum = Field(...)
     multiply : Optional[str] = Field(None)
-    agg : Literal['sum','mean'] = Field('mean')
+    agg : AggEnum = Field('mean')
     depends: bool = Field(False)
     iter: int = Field(1,ge=1) 
     general: bool = Field(False)
-    freq_value: Optional[Literal['M','D','A']] = Field(None)
+    freq_value: FreqEnum = Field(None)
 
     @validator('iter', always=True)
     def check_list_length(cls,v,values):

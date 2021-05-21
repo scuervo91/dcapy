@@ -1,5 +1,5 @@
 #External Imports
-from typing import Union, Optional, List, Literal, Dict
+from typing import Union, Optional, List, Dict
 from pydantic import BaseModel, Field, validator
 from datetime import date, timedelta
 import pandas as pd
@@ -7,9 +7,14 @@ import numpy as np
 import pyDOE2 as ed
 import yaml
 import json
+from rich.tree import Tree
+from rich.panel import Panel
+from rich.layout import Layout
+from rich.columns import Columns
 #Local Imports
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
 from ..cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
+from ..console import console
 
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
 # the input dca is a subclass of DCA. 
@@ -36,6 +41,7 @@ class ScheduleBase(BaseModel):
 	seed: Optional[int] = Field(None)
 	iter : int = Field(1, ge=1)
 	ppf : Optional[float] = Field(None, ge=0, le=1)
+	description: str = Field(None)
  
 	class Config:
 		arbitrary_types_allowed = True
@@ -58,14 +64,17 @@ class ScheduleBase(BaseModel):
 				yaml.safe_dump(json.loads(self.json(exclude_unset=True)), f)
 			if format=='json':
 				f.write(self.json(exclude_unset=True))
+    
+	#def tree(self):
+	#	node_tree = Tree(self.name)
   
 class Period(ScheduleBase):
 	dca : union_classes_dca 
 	start: Union[int,date]
 	end: Optional[Union[int,date]]
 	time_list : Optional[List[Union[int,date]]] = Field(None)
-	freq_input: Literal['M','D','A'] = Field('D')
-	freq_output: Literal['M','D','A'] = Field('D')
+	freq_input: FreqEnum = Field('D')
+	freq_output: FreqEnum = Field('D')
 	rate_limit: Optional[float] = Field(None, ge=0)
 	cum_limit: Optional[float] = Field(None, ge=0)
 	depends: Optional[Depends] = Field(None)
@@ -128,7 +137,7 @@ class Period(ScheduleBase):
 				return [i for i in dates_sr]
 		raise ValueError('There is no any Forecast')
 
-	def generate_cashflow(self, freq_output=None, add_name=None, seed=None, ppf=None):
+	def generate_cashflow(self, freq_output=None, add_name=None, seed=None, ppf=None,add_cash_params:list=None):
 		if freq_output is None:
 			freq_output = self.freq_output
    
@@ -172,13 +181,21 @@ class Period(ScheduleBase):
 			iterate_new_shape = forecast_iterations * np.ones(shapes)
    
 			#Iterate over list of cases
-			#for i in _forecast['iteration'].unique():
+			if self.cashflow_params is None:
+				cashflow_params = []
+			else:
+				cashflow_params = self.cashflow_params.copy()
+			if add_cash_params:
+				cashflow_params.extend(add_cash_params)
+    
+			if len(cashflow_params)==0:
+				raise ValueError('No Cashflow Params are set')
 			for i in range(shapes[0]):
 
 				_forecast_i = _forecast[_forecast['iteration']==iterate_new_shape[i]]
 
 				cashflow_model_dict = {'name':self.name + '_' + str(i)}
-				for param in self.cashflow_params:
+				for param in cashflow_params:
 					#initialize the individual cashflow dict
 
 					if param.target not in cashflow_model_dict.keys():
@@ -272,7 +289,21 @@ class Period(ScheduleBase):
 			return list_cashflow_model
 		else:
 			raise ValueError('Either Forecast or Cashflow Params not defined')
-    
+
+	def tree(self, style='bold', guide_style='bold',show_emoji=True):
+		emoji = ':chart_with_downwards_trend:'
+		tree_text = emoji+self.name if show_emoji else self.name
+		node_tree = Tree(tree_text, style=style, guide_style=guide_style)
+
+		return node_tree
+
+	def layout(self, emoji=':chart_with_downwards_trend:', title_style = 'bold green'):
+		text = yaml.dump(self.dict(exclude_unset=True))  
+
+		panel_text = f'{emoji}\n' + text
+		panel = Panel(panel_text,title=f'[{title_style}]{self.name}[/{title_style}]')
+		return panel
+  
 class Scenario(ScheduleBase):
 	periods: Union[List[Period],Dict[str,Period]]
 	freq_output: str = Field('D')
@@ -368,7 +399,7 @@ class Scenario(ScheduleBase):
 		return np.array(n).max() + 1
 
 
-	def generate_cashflow(self,periods:list = None, freq_output=None, add_name=None, seed=None, ppf=None):
+	def generate_cashflow(self,periods:list = None, freq_output=None, add_name=None, seed=None, ppf=None, add_cash_params:list=None):
 		if freq_output is None:
 			freq_output = self.freq_output
 		#Make filter
@@ -390,25 +421,29 @@ class Scenario(ScheduleBase):
 		list_periods_errors = []
 		pass_cashflow_params = []     #Cashflow to pass to periods
 		general_cashflow_params = []   #General cashflow for scenario
-		if self.cashflow_params:
-			for i in self.cashflow_params:
+  
+		if self.cashflow_params is None:
+			cashflow_params = []
+		else:
+			cashflow_params = self.cashflow_params.copy()
+		if add_cash_params:
+			cashflow_params.extend(add_cash_params)
+
+		if len(cashflow_params)>0:
+			for i in cashflow_params:
 				if i.general:
 					general_cashflow_params.append(i)
 				else:
 					pass_cashflow_params.append(i) 
+		else:	
+			pass_cashflow_params = None
 		for p in _periods:
-			#if self.periods[p].cashflow_params is None:
-			if len(pass_cashflow_params)>0:		
-				if self.periods[p].cashflow_params is None:
-					self.periods[p].cashflow_params = pass_cashflow_params
-				else:
-					self.periods[p].cashflow_params.extend(pass_cashflow_params)
 			try:
 				if add_name is None:
 					csh_name = self.name
 				else:
 					csh_name = add_name + '-' + self.name
-				_cf = self.periods[p].generate_cashflow(freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf)
+				_cf = self.periods[p].generate_cashflow(freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf, add_cash_params=pass_cashflow_params)
 			except Exception as e:
 				print(e)
 				list_periods_errors.append(self.periods[p].name)
@@ -480,6 +515,29 @@ class Scenario(ScheduleBase):
 
 		return cashflow_models
 
+	def tree(self, style='bold', guide_style='bold',show_emoji=True):
+		emoji = ':twisted_rightwards_arrows:'
+		tree_text = emoji+self.name if show_emoji else self.name
+		node_tree = Tree(tree_text, style=style, guide_style=guide_style)
+
+		for p in self.periods:
+			node_tree.add(self.periods[p].tree(style=style, guide_style=guide_style,show_emoji=show_emoji))
+		return node_tree
+
+	def layout(self, emoji=':twisted_rightwards_arrows:', title_style = 'bold cyan',period_kw={}):
+		
+		if self.periods:
+			layout = Layout()
+   
+			#list of period layouts
+			list_layouts = []
+			for p in self.periods:
+				lay_p = self.periods[p].layout(**period_kw)
+				list_layouts.append(Layout(lay_p,name=self.periods[p].name))
+
+			layout.split_column(*list_layouts)
+			panel = Panel.fit(layout,title=f'[{title_style}]{self.name}[/{title_style}]')
+			return panel
 
 class Well(ScheduleBase):
 	scenarios : Union[List[Scenario],Dict[str,Scenario]]
@@ -538,7 +596,7 @@ class Well(ScheduleBase):
 
 		return well_forecast
 
-	def generate_cashflow(self, scenarios:Union[list,dict] = None, freq_output=None, add_name=None, seed=None, ppf=None):
+	def generate_cashflow(self, scenarios:Union[list,dict] = None, freq_output=None, add_name=None, seed=None, ppf=None,add_cash_params:list=None):
 		if scenarios:
 			scenarios_list = scenarios if isinstance(scenarios,list) else list(scenarios.keys())
 			_scenarios = [i for i in self.scenarios if i in scenarios_list]
@@ -555,24 +613,27 @@ class Well(ScheduleBase):
 
 		pass_cashflow_params = []     #Cashflow to pass to periods
 		general_cashflow_params = []   #General cashflow for scenario
-		if self.cashflow_params:
-			for i in self.cashflow_params:
+		if self.cashflow_params is None:
+			cashflow_params = []
+		else:
+			cashflow_params = self.cashflow_params.copy()
+		if add_cash_params:
+			cashflow_params.extend(add_cash_params)
+		if len(cashflow_params)>0:
+			for i in cashflow_params:
 				if i.general:
 					general_cashflow_params.append(i)
 				else:
 					pass_cashflow_params.append(i) 
+		else:
+			pass_cashflow_params=None
 		for s in _scenarios:
-			if len(pass_cashflow_params)>0:
-				if self.scenarios[s].cashflow_params is None:
-					self.scenarios[s].cashflow_params = pass_cashflow_params
-				else:
-					self.scenarios[s].cashflow_params.append(pass_cashflow_params)
 			if add_name is None:
 				csh_name = self.name
 			else:
 				csh_name = add_name + '-' + self.name
 			periods = scenarios[s] if isinstance(scenarios,dict) else None
-			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf)
+			cash_s = self.scenarios[s].generate_cashflow(periods=periods, freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf, add_cash_params=pass_cashflow_params)
 
 			list_cashflows.extend(cash_s)
 
@@ -635,6 +696,31 @@ class Well(ScheduleBase):
 		self.cashflow = list_cashflows
 
 		return list_cashflows
+
+	def tree(self, style='bold', guide_style='bold',show_emoji=True):
+		emoji = ':tokyo_tower:'
+		tree_text = emoji+self.name if show_emoji else self.name
+		node_tree = Tree(tree_text, style=style, guide_style=guide_style)
+
+		for p in self.scenarios:
+			node_tree.add(self.scenarios[p].tree(style=style, guide_style=guide_style,show_emoji=show_emoji))
+		return node_tree
+
+	def layout(self, emoji=':tokyo_tower:', title_style = 'bold magenta',period_kw={},scenario_kw={}):
+		
+		if self.scenarios:
+			layout = Layout()
+   
+			#list of period layouts
+			list_layouts = []
+			for p in self.scenarios:
+				lay_p = self.scenarios[p].layout(period_kw=period_kw,**scenario_kw)
+				list_layouts.append(Layout(lay_p,name=self.scenarios[p].name))
+
+			layout.split_row(*list_layouts)
+			panel = Panel.fit(layout,title=f'[{title_style}]{self.name}[/{title_style}]')
+			return panel
+
    
 class WellsGroup(ScheduleBase):
 	wells : Union[List[Well],Dict[str,Well]]
@@ -694,7 +780,7 @@ class WellsGroup(ScheduleBase):
 
 		return wells_forecast
 
-	def generate_cashflow(self, wells:Union[list,dict] = None, freq_output=None, add_name=None, seed=None, ppf=None):
+	def generate_cashflow(self, wells:Union[list,dict] = None, freq_output=None, add_name=None, seed=None, ppf=None, add_cash_params:list=None):
 		if wells:
 			wells_list = wells if isinstance(wells,list) else list(wells.keys())
 			_wells = [i for i in self.wells if i in wells_list]
@@ -711,24 +797,30 @@ class WellsGroup(ScheduleBase):
 		len_cashflows = []
 		pass_cashflow_params = []     #Cashflow to pass to periods
 		general_cashflow_params = []   #General cashflow for scenario
-		if self.cashflow_params:
+  
+		if self.cashflow_params is None:
+			cashflow_params = []
+		else:
+			cashflow_params = self.cashflow_params.copy()
+		if add_cash_params:
+			cashflow_params.extend(add_cash_params)
+   
+		if len(cashflow_params)>0:
 			for i in self.cashflow_params:
 				if i.general:
 					general_cashflow_params.append(i)
 				else:
 					pass_cashflow_params.append(i)   
+		else:
+			pass_cashflow_params = None
+      
 		for w in _wells:
-			if len(pass_cashflow_params)>0:
-				if self.wells[w].cashflow_params is None:
-					self.wells[w].cashflow_params = pass_cashflow_params
-				else:
-					self.wells[w].cashflow_params.extend(pass_cashflow_params)
 			if add_name is None:
 				csh_name = self.name
 			else:
 				csh_name = add_name + '-' + self.name
 			scenarios = wells[w] if isinstance(wells,dict) else None
-			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf)
+			cash_s = self.wells[w].generate_cashflow(scenarios=scenarios, freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf, add_cash_params=pass_cashflow_params)
 
 			len_cashflows.append(len(cash_s))
    
@@ -832,7 +924,16 @@ class WellsGroup(ScheduleBase):
 			scenarios_list.append(esc)
 
 		return scenarios_list
-   
+
+	def tree(self, style='bold', guide_style='bold',show_emoji=True):
+		emoji = ':factory:'
+		tree_text = emoji+self.name if show_emoji else self.name
+		node_tree = Tree(tree_text, style=style, guide_style=guide_style)
+
+		for p in self.wells:
+			node_tree.add(self.wells[p].tree(style=style, guide_style=guide_style,show_emoji=show_emoji))
+		return node_tree
+ 
 def model_from_dict(d:dict):
     
     if 'dca' in d.keys():

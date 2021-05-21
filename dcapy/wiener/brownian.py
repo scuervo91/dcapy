@@ -3,10 +3,11 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from pydantic import BaseModel, Field, Extra
-from typing import List, Union, Optional, Literal
+from typing import List, Union, Optional
 from datetime import date
 #Local Imports
 from ..dca import list_freq, converter_factor, ProbVar
+from ..dca import FreqEnum
 #from ..models import ChgPts
 
 class Weiner(BaseModel):
@@ -15,8 +16,8 @@ class Weiner(BaseModel):
     steps: int = Field(1, gt=0)
     processes: int = Field(1, gt=0)
     generator: ProbVar = Field(ProbVar())
-    freq_input: Literal['M','D','A'] = Field('D')
-    freq_output: Literal['M','D','A'] = Field('D')
+    freq_input: FreqEnum = Field('D')
+    freq_output: FreqEnum = Field('D')
 
     class Config:
         arbitrary_types_allowed = True

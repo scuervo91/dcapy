@@ -6,7 +6,10 @@ from typing import Union, List, Optional
 from pydantic import BaseModel, Field, Extra
 from scipy import stats
 import statsmodels.formula.api as smf
-
+from rich.panel import Panel
+from rich.layout import Layout
+from rich.text import Text
+import yaml
 #Local Imports
 from .dca import DCA, ProbVar
 from .timeconverter import list_freq, converter_factor, time_converter_matrix, check_value_or_prob, FreqEnum
@@ -121,6 +124,14 @@ class Wor(BaseModel,DCA):
         arbitrary_types_allowed = True
         validate_assignment = True
         extra = Extra.forbid
+        
+    def get_layout(self):
+        text = yaml.dump(self.dict(exclude_unset=True))  
+        
+        panel_text = ':large_blue_diamond: [bold]Wor[/bold]\n' + text
+        panel = Panel.fit(panel_text,title='[bold blue]WOR Model[/bold blue]')
+        #console.print(layout)
+        return panel
 
     def get_bsw(self,size=None, ppf=None, seed=None):
         """get_bsw get the number of bsw
