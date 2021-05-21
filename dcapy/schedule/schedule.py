@@ -8,6 +8,9 @@ import pyDOE2 as ed
 import yaml
 import json
 from rich.tree import Tree
+from rich.panel import Panel
+from rich.layout import Layout
+from rich.columns import Columns
 #Local Imports
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
 from ..cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
@@ -64,9 +67,6 @@ class ScheduleBase(BaseModel):
     
 	#def tree(self):
 	#	node_tree = Tree(self.name)
-  
-        
-        
   
 class Period(ScheduleBase):
 	dca : union_classes_dca 
@@ -296,6 +296,13 @@ class Period(ScheduleBase):
 		node_tree = Tree(tree_text, style=style, guide_style=guide_style)
 
 		return node_tree
+
+	def layout(self, emoji=':chart_with_downwards_trend:', title_style = 'bold green'):
+		text = yaml.dump(self.dict(exclude_unset=True))  
+
+		panel_text = f'{emoji}\n' + text
+		panel = Panel(panel_text,title=f'[{title_style}]{self.name}[/{title_style}]')
+		return panel
   
 class Scenario(ScheduleBase):
 	periods: Union[List[Period],Dict[str,Period]]
@@ -517,6 +524,21 @@ class Scenario(ScheduleBase):
 			node_tree.add(self.periods[p].tree(style=style, guide_style=guide_style,show_emoji=show_emoji))
 		return node_tree
 
+	def layout(self, emoji=':twisted_rightwards_arrows:', title_style = 'bold cyan',period_kw={}):
+		
+		if self.periods:
+			layout = Layout()
+   
+			#list of period layouts
+			list_layouts = []
+			for p in self.periods:
+				lay_p = self.periods[p].layout(**period_kw)
+				list_layouts.append(Layout(lay_p,name=self.periods[p].name))
+
+			layout.split_column(*list_layouts)
+			panel = Panel.fit(layout,title=f'[{title_style}]{self.name}[/{title_style}]')
+			return panel
+
 class Well(ScheduleBase):
 	scenarios : Union[List[Scenario],Dict[str,Scenario]]
  
@@ -683,6 +705,21 @@ class Well(ScheduleBase):
 		for p in self.scenarios:
 			node_tree.add(self.scenarios[p].tree(style=style, guide_style=guide_style,show_emoji=show_emoji))
 		return node_tree
+
+	def layout(self, emoji=':tokyo_tower:', title_style = 'bold magenta',period_kw={},scenario_kw={}):
+		
+		if self.scenarios:
+			layout = Layout()
+   
+			#list of period layouts
+			list_layouts = []
+			for p in self.scenarios:
+				lay_p = self.scenarios[p].layout(period_kw=period_kw,**scenario_kw)
+				list_layouts.append(Layout(lay_p,name=self.scenarios[p].name))
+
+			layout.split_row(*list_layouts)
+			panel = Panel.fit(layout,title=f'[{title_style}]{self.name}[/{title_style}]')
+			return panel
 
    
 class WellsGroup(ScheduleBase):
@@ -896,7 +933,7 @@ class WellsGroup(ScheduleBase):
 		for p in self.wells:
 			node_tree.add(self.wells[p].tree(style=style, guide_style=guide_style,show_emoji=show_emoji))
 		return node_tree
-   
+ 
 def model_from_dict(d:dict):
     
     if 'dca' in d.keys():
