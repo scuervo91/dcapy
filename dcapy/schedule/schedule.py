@@ -1,5 +1,5 @@
 #External Imports
-from typing import Union, Optional, List, Literal, Dict
+from typing import Union, Optional, List, Dict
 from pydantic import BaseModel, Field, validator
 from datetime import date, timedelta
 import pandas as pd
@@ -73,8 +73,8 @@ class Period(ScheduleBase):
 	start: Union[int,date]
 	end: Optional[Union[int,date]]
 	time_list : Optional[List[Union[int,date]]] = Field(None)
-	freq_input: Literal['M','D','A'] = Field('D')
-	freq_output: Literal['M','D','A'] = Field('D')
+	freq_input: FreqEnum = Field('D')
+	freq_output: FreqEnum = Field('D')
 	rate_limit: Optional[float] = Field(None, ge=0)
 	cum_limit: Optional[float] = Field(None, ge=0)
 	depends: Optional[Depends] = Field(None)
