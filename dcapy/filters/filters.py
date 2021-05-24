@@ -63,6 +63,9 @@ def exp_wgh_avg(y,beta):
     y = np.nan_to_num(yw / bias_correction)
     
     return y
+
+def beta_from_days(days):
+    return 1 - (1/days)
     
      
     
