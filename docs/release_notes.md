@@ -1,5 +1,12 @@
 # Release Notes
 
+
+## 0.1.2
+### Fixes
+* 👷 Fix how to export the Rich HTML layout excluding both, the unset and none variables
+* 👷 Fix Cashflow workflow when params not set in period but WellsGroup
+
+
 ## 0.1.1
 
 ### Features

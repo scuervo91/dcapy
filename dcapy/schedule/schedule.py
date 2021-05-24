@@ -15,7 +15,7 @@ from rich.columns import Columns
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
 from ..cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
 from ..console import console
-
+import traceback
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
 # the input dca is a subclass of DCA. 
 # Still I don't know if there's a way Pydantic check if a input variable is subclass of other class
@@ -61,9 +61,9 @@ class ScheduleBase(BaseModel):
 	def to_file(self, file:str, format='yaml'):
 		with open(f'{file}.{format}','w') as f:
 			if format=='yaml':
-				yaml.safe_dump(json.loads(self.json(exclude_unset=True)), f)
+				yaml.safe_dump(json.loads(self.json(exclude_unset=True, exclude_none=True)), f)
 			if format=='json':
-				f.write(self.json(exclude_unset=True))
+				f.write(self.json(exclude_unset=True, exclude_none=True))
     
 	#def tree(self):
 	#	node_tree = Tree(self.name)
@@ -146,8 +146,8 @@ class Period(ScheduleBase):
 
 		if ppf is None:
 			ppf = self.ppf
-   
-		if self.forecast is not None and self.cashflow_params is not None:
+
+		if self.forecast is not None and any([self.cashflow_params is not None,add_cash_params is not None]):
 
 			_forecast = self.forecast.df()
 
@@ -165,21 +165,13 @@ class Period(ScheduleBase):
 			forecast_iterations = _forecast['iteration'].unique()
 			shapes_to_broadcast.append(len(forecast_iterations))
 
-			#Cashflows Iterations
-			for p in self.cashflow_params:
-				shapes_to_broadcast.append(p.iter)
-    
-			#shapes broadcast
-			shapes = np.broadcast_shapes(*shapes_to_broadcast)
-		
 			#Forecast iterations shape.
 			#Example. If there's only one iteration in Forecast 
 			# the variable forecast_iterations would be = np.array([0]). 
 			# At the same time if the broadcasted shape is (10,) due to 10 iterations in cashflows params
 			# the iterate_new_shape would be np.array([0,0,0,0,0,0,0,0,0,0]). 
 			# This is done to make the 10 different cashflow models.
-			iterate_new_shape = forecast_iterations * np.ones(shapes)
-   
+			
 			#Iterate over list of cases
 			if self.cashflow_params is None:
 				cashflow_params = []
@@ -187,6 +179,14 @@ class Period(ScheduleBase):
 				cashflow_params = self.cashflow_params.copy()
 			if add_cash_params:
 				cashflow_params.extend(add_cash_params)
+
+			#Cashflows Iterations
+			for p in cashflow_params:
+				shapes_to_broadcast.append(p.iter)
+    
+			#shapes broadcast
+			shapes = np.broadcast_shapes(*shapes_to_broadcast)
+			iterate_new_shape = forecast_iterations * np.ones(shapes)
     
 			if len(cashflow_params)==0:
 				raise ValueError('No Cashflow Params are set')
@@ -298,7 +298,7 @@ class Period(ScheduleBase):
 		return node_tree
 
 	def layout(self, emoji=':chart_with_downwards_trend:', title_style = 'bold green'):
-		text = yaml.dump(self.dict(exclude_unset=True))  
+		text = yaml.dump(self.dict(exclude_unset=True, exclude_none=True))  
 
 		panel_text = f'{emoji}\n' + text
 		panel = Panel(panel_text,title=f'[{title_style}]{self.name}[/{title_style}]')
@@ -445,7 +445,8 @@ class Scenario(ScheduleBase):
 					csh_name = add_name + '-' + self.name
 				_cf = self.periods[p].generate_cashflow(freq_output=freq_output, add_name=csh_name, seed=seed, ppf=ppf, add_cash_params=pass_cashflow_params)
 			except Exception as e:
-				print(e)
+				print(p,e)
+				traceback.print_exc()
 				list_periods_errors.append(self.periods[p].name)
 			else:
 				if len(_cf)==1:
