@@ -61,9 +61,9 @@ class ScheduleBase(BaseModel):
 	def to_file(self, file:str, format='yaml'):
 		with open(f'{file}.{format}','w') as f:
 			if format=='yaml':
-				yaml.safe_dump(json.loads(self.json(exclude_unset=True)), f)
+				yaml.safe_dump(json.loads(self.json(exclude_unset=True, exclude_none=True)), f)
 			if format=='json':
-				f.write(self.json(exclude_unset=True))
+				f.write(self.json(exclude_unset=True, exclude_none=True))
     
 	#def tree(self):
 	#	node_tree = Tree(self.name)
@@ -298,7 +298,7 @@ class Period(ScheduleBase):
 		return node_tree
 
 	def layout(self, emoji=':chart_with_downwards_trend:', title_style = 'bold green'):
-		text = yaml.dump(self.dict(exclude_unset=True))  
+		text = yaml.dump(self.dict(exclude_unset=True, exclude_none=True))  
 
 		panel_text = f'{emoji}\n' + text
 		panel = Panel(panel_text,title=f'[{title_style}]{self.name}[/{title_style}]')
