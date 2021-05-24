@@ -1,1 +1,1 @@
-from .filters import zscore, exp_wgh_avg
+from .filters import zscore, exp_wgh_avg, beta_from_days
