@@ -11,10 +11,12 @@ from rich.tree import Tree
 from rich.panel import Panel
 from rich.layout import Layout
 from rich.columns import Columns
+import requests
 #Local Imports
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
 from ..cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
 from ..console import console
+from ..auth import Credential
 import traceback
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
 # the input dca is a subclass of DCA. 
@@ -303,6 +305,65 @@ class Period(ScheduleBase):
 		panel_text = f'{emoji}\n' + text
 		panel = Panel(panel_text,title=f'[{title_style}]{self.name}[/{title_style}]')
 		return panel
+
+	def insert_db(self,cred:Credential, description:str=None):
+		end_point = 'api/v1/periods/'
+		headers = {
+			'accept': 'application/json',
+			'Authorization': f'Bearer {cred.token}',
+			'Content-Type':'application/json'
+		}
+		model = json.loads(self.json(exclude_unset=True))
+		data = {'model':model}
+		if description:
+			data['description'] = description
+   
+		try:
+			r = requests.post(f'{cred.url}{end_point}', headers=headers, json=data)
+			r.raise_for_status()
+			data = json.loads(r.text)
+			return data['key']
+
+		except requests.exceptions.HTTPError as err:
+			print(err)
+
+	def update_db(self,key:str, cred:Credential, description:str=None):
+		end_point = 'api/v1/periods/'
+		headers = {
+			'accept': 'application/json',
+			'Authorization': f'Bearer {cred.token}'
+		}
+		model = json.loads(self.json(exclude_unset=True))
+		data = {'model':model}
+		if description:
+			data['description'] = description
+		try:
+			r = requests.put(f'{cred.url}{end_point}{key}', headers=headers, json=data)
+			r.raise_for_status()
+			data = json.loads(r.text)
+			return data['key']
+
+		except requests.exceptions.HTTPError as err:
+			print(err)
+  
+
+
+def get_period(key:str, cred):
+	end_point = 'api/v1/periods/'
+	headers = {
+		'accept': 'application/json',
+		'Authorization': f'Bearer {cred.token}'
+	}
+		
+	try:
+		r = requests.get(f'{cred.url}{end_point}{key}', headers=headers)
+		r.raise_for_status()
+		data = json.loads(r.text)
+		return Period(**data['model'])
+
+	except requests.exceptions.HTTPError as err:
+		print(err)
+
   
 class Scenario(ScheduleBase):
 	periods: Union[List[Period],Dict[str,Period]]
