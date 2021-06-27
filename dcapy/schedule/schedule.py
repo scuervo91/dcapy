@@ -36,7 +36,7 @@ class Depends(BaseModel):
   
     
 class ScheduleBase(BaseModel):
-	name:str
+	name:str = Field(None)
 	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
 	cashflow : Optional[List[CashFlowModel]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
@@ -44,6 +44,7 @@ class ScheduleBase(BaseModel):
 	iter : int = Field(1, ge=1)
 	ppf : Optional[float] = Field(None, ge=0, le=1)
 	description: str = Field(None)
+	key: str = Field(None)
  
 	class Config:
 		arbitrary_types_allowed = True
@@ -71,9 +72,9 @@ class ScheduleBase(BaseModel):
 	#	node_tree = Tree(self.name)
   
 class Period(ScheduleBase):
-	dca : union_classes_dca 
-	start: Union[int,date]
-	end: Optional[Union[int,date]]
+	dca : union_classes_dca = Field(None)
+	start: Union[int,date] = Field(None)
+	end: Optional[Union[int,date]] = Field(None)
 	time_list : Optional[List[Union[int,date]]] = Field(None)
 	freq_input: FreqEnum = Field('D')
 	freq_output: FreqEnum = Field('D')
@@ -306,6 +307,26 @@ class Period(ScheduleBase):
 		panel = Panel(panel_text,title=f'[{title_style}]{self.name}[/{title_style}]')
 		return panel
 
+	def get_db(self,key:str, cred:Credential):
+		end_point = 'api/v1/periods/'
+		headers = {
+			'accept': 'application/json',
+			'Authorization': f'Bearer {cred.token}'
+		}	
+
+		try:
+			r = requests.get(f'{cred.url}{end_point}{key}', headers=headers)
+			r.raise_for_status()
+			data = json.loads(r.text)
+			dict_data = data['model']
+
+			for i in dict_data:
+				setattr(self,i,dict_data[i])
+		except requests.exceptions.HTTPError as err:
+			print(err)
+		else:
+			self.key = key
+
 	def insert_db(self,cred:Credential, description:str=None):
 		end_point = 'api/v1/periods/'
 		headers = {
@@ -322,12 +343,16 @@ class Period(ScheduleBase):
 			r = requests.post(f'{cred.url}{end_point}', headers=headers, json=data)
 			r.raise_for_status()
 			data = json.loads(r.text)
-			return data['key']
-
+			
 		except requests.exceptions.HTTPError as err:
 			print(err)
+		else:
+			self.key = data['key']
+			return data['key']
 
-	def update_db(self,key:str, cred:Credential, description:str=None):
+	def update_db(self, cred:Credential, description:str=None):
+		if self.key is None:
+			raise ValueError('Model has no Key')
 		end_point = 'api/v1/periods/'
 		headers = {
 			'accept': 'application/json',
@@ -338,32 +363,35 @@ class Period(ScheduleBase):
 		if description:
 			data['description'] = description
 		try:
-			r = requests.put(f'{cred.url}{end_point}{key}', headers=headers, json=data)
+			r = requests.put(f'{cred.url}{end_point}{self.key}', headers=headers, json=data)
 			r.raise_for_status()
 			data = json.loads(r.text)
-			return data['key']
-
 		except requests.exceptions.HTTPError as err:
 			print(err)
-  
-
-
-def get_period(key:str, cred):
-	end_point = 'api/v1/periods/'
-	headers = {
-		'accept': 'application/json',
-		'Authorization': f'Bearer {cred.token}'
-	}
-		
-	try:
-		r = requests.get(f'{cred.url}{end_point}{key}', headers=headers)
-		r.raise_for_status()
-		data = json.loads(r.text)
-		return Period(**data['model'])
-
-	except requests.exceptions.HTTPError as err:
-		print(err)
-
+		else:
+			return data['key']
+			
+   
+	def delete_db(self, cred:Credential, description:str=None):
+		if self.key is None:
+			raise ValueError('Model has no Key')
+		end_point = 'api/v1/periods/'
+		headers = {
+			'accept': 'application/json',
+			'Authorization': f'Bearer {cred.token}'
+		}
+		model = json.loads(self.json(exclude_unset=True))
+		data = {'model':model}
+		if description:
+			data['description'] = description
+		try:
+			r = requests.delete(f'{cred.url}{end_point}{self.key}', headers=headers, json=data)
+			r.raise_for_status()
+			data = json.loads(r.text)
+		except requests.exceptions.HTTPError as err:
+			print(err)
+		else:
+			return data['key']
   
 class Scenario(ScheduleBase):
 	periods: Union[List[Period],Dict[str,Period]]
