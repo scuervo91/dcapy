@@ -1,1 +1,1 @@
-from .schedule import Period, Scenario, Well, WellsGroup, model_from_dict, get_period
+from .schedule import Period, Scenario, Well, WellsGroup, model_from_dict
