@@ -1,6 +1,10 @@
 # Release Notes
 
 
+## 0.1.3
+### Features
+* 🎨 Add Support with [Deta Cloud](https://deta.sh) to save models on the cloud. It is required to create an account. 
+
 ## 0.1.2
 ### Fixes
 * 👷 Fix how to export the Rich HTML layout excluding both, the unset and none variables
