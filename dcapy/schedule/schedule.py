@@ -52,7 +52,7 @@ class ScheduleBase(BaseModel):
 	iter : int = Field(1, ge=1)
 	ppf : Optional[float] = Field(None, ge=0, le=1)
 	description: str = Field(None)
-	key: str = Field(None)
+	id: str = Field(None)
  
 	class Config:
 		arbitrary_types_allowed = True
@@ -94,7 +94,7 @@ class ScheduleBase(BaseModel):
 		except requests.exceptions.HTTPError as err:
 			print(err)
 		else:
-			self.key = key 
+			self.id = key 
   
 	def insert_db(self,cred:Credential, description:str=None):
 		end_point = f'api/v1/{self.type.value}/'
@@ -116,11 +116,11 @@ class ScheduleBase(BaseModel):
 		except requests.exceptions.HTTPError as err:
 			print(err)
 		else:
-			self.key = data['key']
-			return data['key']
+			self.id = data['id']
+			return data['id']
 
 	def update_db(self, cred:Credential, description:str=None):
-		if self.key is None:
+		if self.id is None:
 			raise ValueError('Model has no Key')
 		end_point = f'api/v1/{self.type.value}/'
 		headers = {
@@ -132,7 +132,7 @@ class ScheduleBase(BaseModel):
 		if description:
 			data['description'] = description
 		try:
-			r = requests.put(f'{cred.url}{end_point}{self.key}', headers=headers, json=data)
+			r = requests.put(f'{cred.url}{end_point}{self.id}', headers=headers, json=data)
 			r.raise_for_status()
 			data = json.loads(r.text)
 		except requests.exceptions.HTTPError as err:
@@ -142,7 +142,7 @@ class ScheduleBase(BaseModel):
 			
    
 	def delete_db(self, cred:Credential, description:str=None):
-		if self.key is None:
+		if self.id is None:
 			raise ValueError('Model has no Key')
 		end_point = f'api/v1/{self.type.value}/'
 		headers = {
@@ -154,7 +154,7 @@ class ScheduleBase(BaseModel):
 		if description:
 			data['description'] = description
 		try:
-			r = requests.delete(f'{cred.url}{end_point}{self.key}', headers=headers, json=data)
+			r = requests.delete(f'{cred.url}{end_point}{self.id}', headers=headers, json=data)
 			r.raise_for_status()
 			data = json.loads(r.text)
 		except requests.exceptions.HTTPError as err:
