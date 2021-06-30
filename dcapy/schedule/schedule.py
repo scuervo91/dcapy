@@ -84,20 +84,18 @@ class ScheduleBase(BaseModel):
 			'accept': 'application/json',
 			'Authorization': f'Bearer {cred.token}'
 		}	
-
 		try:
 			r = requests.get(f'{cred.url}{end_point}{key}', headers=headers)
 			r.raise_for_status()
 			data = json.loads(r.text)
-			dict_data = data['model']
-
+			dict_data = data['case']
 			for i in dict_data:
-				setattr(self,i,dict_data[i])
+				setattr(self,i,dict_data[i]) 
 		except requests.exceptions.HTTPError as err:
 			print(err)
 		else:
 			self.key = key 
-
+  
 	def insert_db(self,cred:Credential, description:str=None):
 		end_point = f'api/v1/{self.type.value}/'
 		headers = {
@@ -176,11 +174,11 @@ class Period(ScheduleBase):
 	depends: Optional[Depends] = Field(None)
 	type: SchemasEnum = Field(SchemasEnum.period, const=True)
 
-	@validator('end')
-	def start_end_match_type(cls,v,values):
-	    if type(v) != type(values['start']):
-	        raise ValueError('start and end must be the same type')
-	    return v
+	# @validator('end')
+	# def start_end_match_type(cls,v,values):
+	#     if type(v) != type(values['start']):
+	#         raise ValueError('start and end must be the same type')
+	#     return v
 
 	class Config:
 		arbitrary_types_allowed = True
@@ -401,8 +399,6 @@ class Period(ScheduleBase):
 		panel = Panel(panel_text,title=f'[{title_style}]{self.name}[/{title_style}]')
 		return panel
 
-
- 
 class Scenario(ScheduleBase):
 	periods: Union[List[Period],Dict[str,Period]] = Field(None)
 	freq_output: str = Field('D')
