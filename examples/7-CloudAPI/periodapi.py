@@ -2,11 +2,11 @@ from dcapy.auth import Credential
 from dcapy.schedule import Period
 
 cred = Credential()
-cred.login('pepitoperez','1234')
+cred.login('scuervo91','Fenicia1703')
 
 p = Period()
 
-p.get_db('2032b907-d01f-411b-9ba1-c430f52fbadc',cred)
+p.get_db('820f6684-1e30-4d55-bff6-ae4363b9d000',cred)
 
 print(p)
 
