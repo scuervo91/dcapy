@@ -32,9 +32,9 @@ freq_format={
 }
 
 class SchemasEnum(str, Enum):
-    period = 'periods'
-    scenario = 'scenarios'
-    well = 'wells'
+    period = 'period'
+    scenario = 'scenario'
+    well = 'well'
     wellsgroup = 'wellsgroup'
 
 
@@ -79,7 +79,7 @@ class ScheduleBase(BaseModel):
 	#def tree(self):
 	#	node_tree = Tree(self.name)
 	def get_db(self,key:str, cred:Credential):
-		end_point = f'api/v1/{self.type.value}/'
+		end_point = f'api/v1/models/{self.type.value}/'
 		headers = {
 			'accept': 'application/json',
 			'Authorization': f'Bearer {cred.token}'
@@ -97,7 +97,7 @@ class ScheduleBase(BaseModel):
 			self.id = key 
   
 	def insert_db(self,cred:Credential, description:str=None):
-		end_point = f'api/v1/{self.type.value}/'
+		end_point = f'api/v1/models/{self.type.value}/'
 		headers = {
 			'accept': 'application/json',
 			'Authorization': f'Bearer {cred.token}',
@@ -107,7 +107,6 @@ class ScheduleBase(BaseModel):
 		data = {'model':model}
 		if description:
 			data['description'] = description
-   
 		try:
 			r = requests.post(f'{cred.url}{end_point}', headers=headers, json=data)
 			r.raise_for_status()
@@ -122,7 +121,7 @@ class ScheduleBase(BaseModel):
 	def update_db(self, cred:Credential, description:str=None):
 		if self.id is None:
 			raise ValueError('Model has no Key')
-		end_point = f'api/v1/{self.type.value}/'
+		end_point = f'api/v1/models/{self.type.value}/'
 		headers = {
 			'accept': 'application/json',
 			'Authorization': f'Bearer {cred.token}'
@@ -144,7 +143,7 @@ class ScheduleBase(BaseModel):
 	def delete_db(self, cred:Credential, description:str=None):
 		if self.id is None:
 			raise ValueError('Model has no Key')
-		end_point = f'api/v1/{self.type.value}/'
+		end_point = f'api/v1/models{self.type.value}/'
 		headers = {
 			'accept': 'application/json',
 			'Authorization': f'Bearer {cred.token}'
