@@ -3,6 +3,8 @@ import requests
 import json
 
 api_url = 'https://dcapyapi.herokuapp.com/'
+#api_url = 'http://127.0.0.1:8000/'
+
 
 class Credential(BaseModel):
     url: HttpUrl = Field(api_url, const=True)
