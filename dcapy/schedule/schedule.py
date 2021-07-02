@@ -97,7 +97,7 @@ class ScheduleBase(BaseModel):
 			self.id = key 
   
 	def insert_db(self,cred:Credential, description:str=None):
-		end_point = f'api/v1/models/{self.type.value}/'
+		end_point = f'api/v1/models/{self.type.value}'
 		headers = {
 			'accept': 'application/json',
 			'Authorization': f'Bearer {cred.token}',
@@ -137,7 +137,7 @@ class ScheduleBase(BaseModel):
 		except requests.exceptions.HTTPError as err:
 			print(err)
 		else:
-			return data['key']
+			return data['id']
 			
    
 	def delete_db(self, cred:Credential, description:str=None):
