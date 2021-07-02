@@ -159,7 +159,7 @@ class ScheduleBase(BaseModel):
 		except requests.exceptions.HTTPError as err:
 			print(err)
 		else:
-			return data['key']
+			return data['id']
   
 class Period(ScheduleBase):
 	dca : union_classes_dca = Field(None)
