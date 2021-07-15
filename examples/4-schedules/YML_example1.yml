@@ -1,4 +1,5 @@
 name: fdp_field
+type: wellsgroup
 wells:
   DC2:
     name: DC2
