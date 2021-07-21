@@ -3,7 +3,10 @@
 
 ## 0.1.3
 ### Features
-* 🎨 Add Support with [Deta Cloud](https://deta.sh) to save models on the cloud. It is required to create an account. 
+* 🎨 Add Support with [Dcapy API](https://dcapyapi.herokuapp.com/) hosted in Heroku. It allows to  upload, download, edit and delete models on the cloud. It is required to create an account.
+
+### Fixes
+* 👷 Fix Python imports modules
 
 ## 0.1.2
 ### Fixes
