@@ -1,0 +1,14 @@
+name: autopy-lot
+on: [push]
+
+jobs:
+  build:
+    name: autopy-lot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: autopy-lot 
+        uses: scuervo91/autopy-lot@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN}}
+          output_dir: './autopy-lot/'
