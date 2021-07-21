@@ -12,3 +12,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN}}
           output_dir: './autopy-lot/'
+      - name: Commit & Push changes
+        uses: actions-js/push@master
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
