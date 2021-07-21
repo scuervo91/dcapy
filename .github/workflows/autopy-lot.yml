@@ -1,9 +1,9 @@
-name: autopy-lot
+name: test-markdown
 on: [push]
 
 jobs:
   build:
-    name: autopy-lot
+    name: autopy-lot-md
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
@@ -11,7 +11,4 @@ jobs:
         uses: deep5050/autopy-lot@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN}}
-          check: all
-          input_type: ipynb
           output_type: markdown
-          output_dir: ./docs/tutorial_/
