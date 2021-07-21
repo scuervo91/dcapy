@@ -14,4 +14,4 @@ jobs:
           check: all
           input_type: ipynb
           output_type: markdown
-          output_dir: './autopy-lot/'
+          output_dir: './docs/tutorial_/'
