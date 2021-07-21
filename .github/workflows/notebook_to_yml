@@ -6,7 +6,7 @@ jobs:
     name: autopy-lot
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v2
       - name: autopy-lot 
         uses: scuervo91/autopy-lot@master
         with:
