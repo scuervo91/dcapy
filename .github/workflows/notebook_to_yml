@@ -11,13 +11,12 @@ jobs:
         uses: scuervo91/autopy-lot@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN}}
-          output_dir: './autopy-lot/'
           check: all
           input_type: ipynb
           comment_magics: true
           split_at_heading: true
           output_type: markdown
-          output_dir: './docs/'
+          output_dir: './docs/tutorial_'
       - name: Commit & Push changes
         uses: actions-js/push@master
         with:
