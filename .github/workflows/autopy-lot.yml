@@ -14,8 +14,4 @@ jobs:
           check: all
           input_type: ipynb
           output_type: markdown
-          output_dir: './docs/tutorial_/'
-      - name: Commit & Push changes
-        uses: actions-js/push@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          output_dir: ./docs/tutorial_/
