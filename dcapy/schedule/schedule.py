@@ -72,9 +72,9 @@ class ScheduleBase(BaseModel):
 	def to_file(self, file:str, format='yaml'):
 		with open(f'{file}.{format}','w') as f:
 			if format=='yaml':
-				yaml.safe_dump(json.loads(self.json(exclude_unset=True, exclude_none=True)), f)
+				yaml.safe_dump(json.loads(self.json(exclude_none=True)), f)
 			if format=='json':
-				f.write(self.json(exclude_unset=True, exclude_none=True))
+				f.write(self.json(exclude_none=True))
     
 	#def tree(self):
 	#	node_tree = Tree(self.name)
