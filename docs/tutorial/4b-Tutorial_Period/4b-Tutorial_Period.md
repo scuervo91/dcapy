@@ -77,11 +77,13 @@ print(dec_model.forecast(start = date(2021,1,1), end=date(2021,6,1), freq_output
     2021-04   4826.402781        7625.0  
     2021-05   4896.794636        7625.0  
     2021-06   5011.822584        7750.0  
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:63: RuntimeWarning: divide by zero encountered in true_divide
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:68: RuntimeWarning: divide by zero encountered in true_divide
       return qi/np.power(1+b*di*time_array,1/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:80: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:85: RuntimeWarning: divide by zero encountered in true_divide
       g = np.power(b*di*time_array+1,(b-1)/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:81: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:86: RuntimeWarning: divide by zero encountered in true_divide
       h = np.power(b*di*ti+1,(b-1)/b)
 
 
@@ -110,6 +112,30 @@ print(type(p1))
     <class 'dcapy.schedule.schedule.Period'>
 
 
+
+```python
+print(p1.json(exclude_unset=True, indent=2))
+```
+
+    {
+      "name": "Period-1",
+      "dca": {
+        "qi": [
+          80.0,
+          100.0
+        ],
+        "di": 0.3,
+        "b": 0.0,
+        "ti": "2021-01-01",
+        "freq_di": "A",
+        "fluid_rate": 250.0
+      },
+      "start": "2021-01-01",
+      "end": "2021-06-01",
+      "freq_output": "M"
+    }
+
+
 ### Wrong input passed
 
 
@@ -134,7 +160,7 @@ except Exception as e:
     dca
       value is not a valid dict (type=type_error.dict)
     freq_output
-      unexpected value; permitted: 'M', 'D', 'A' (type=value_error.const; given=BM; permitted=('M', 'D', 'A'))
+      value is not a valid enumeration member; permitted: 'A', 'M', 'D' (type=type_error.enum; enum_values=[<FreqEnum.A: 'A'>, <FreqEnum.M: 'M'>, <FreqEnum.D: 'D'>])
 
 
 The wrong user input trigger the Pydantic validation error indicating the `dna` is not valid neither does `freq output`
@@ -166,11 +192,11 @@ p1 = Period(**p1_dict)
 print(p1)
 ```
 
-    name='Period-1' cashflow_params=None cashflow=None forecast=None seed=None iter=1 ppf=None dca=Declination 
+    name='Period-1' cashflow_params=None cashflow=None forecast=None seed=None iter=1 ppf=None description=None id=None dca=Declination 
      Ti: 2021-01-01 
      Qi: [80.0, 100.0] bbl/d 
      Di: 0.3 A 
-     b: 0.0 start=datetime.date(2021, 1, 1) end=datetime.date(2022, 1, 1) time_list=None freq_input='D' freq_output='M' rate_limit=None cum_limit=None depends=None
+     b: 0.0 start=datetime.date(2021, 1, 1) end=datetime.date(2022, 1, 1) time_list=None freq_input='D' freq_output=<FreqEnum.M: 'M'> rate_limit=None cum_limit=None depends=None type=<SchemasEnum.period: 'period'>
 
 
 It automatically validates dates even they are strings, floats and deeper instances like dca.Arps
@@ -270,11 +296,13 @@ print(p1.generate_forecast())
     2021-11   5277.788830        7625.0  Period-1  
     2021-12   5336.827175        7625.0  Period-1  
     2022-01   5453.463516        7750.0  Period-1  
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:63: RuntimeWarning: divide by zero encountered in true_divide
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:68: RuntimeWarning: divide by zero encountered in true_divide
       return qi/np.power(1+b*di*time_array,1/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:80: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:85: RuntimeWarning: divide by zero encountered in true_divide
       g = np.power(b*di*time_array+1,(b-1)/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:81: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:86: RuntimeWarning: divide by zero encountered in true_divide
       h = np.power(b*di*ti+1,(b-1)/b)
 
 
@@ -303,6 +331,16 @@ p1 = Period(**p1_dict)
 print(p1.generate_forecast())
 ```
 
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:245: RuntimeWarning: invalid value encountered in true_divide
+      (np.power(qi / rate, b) - 1)/(b * di)
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:68: RuntimeWarning: divide by zero encountered in true_divide
+      return qi/np.power(1+b*di*time_array,1/b)
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:85: RuntimeWarning: divide by zero encountered in true_divide
+      g = np.power(b*di*time_array+1,(b-1)/b)
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:86: RuntimeWarning: divide by zero encountered in true_divide
+      h = np.power(b*di*ti+1,(b-1)/b)
+
+
                oil_rate       oil_cum  iteration   oil_volume  fluid_rate  \
     date                                                                    
     2021-01   80.000000      0.000000          0  2448.672116       250.0   
@@ -310,7 +348,7 @@ print(p1.generate_forecast())
     2021-03   76.213109   4607.383867          0  2245.736596       250.0   
     2021-04   74.295771   6940.145308          0  2267.189892       250.0   
     2021-05   72.486222   9141.763651          0  2210.152858       250.0   
-    2021-06   70.662643  11360.451023          0          NaN       250.0   
+    2021-06   70.662643  11360.451023          0 -4570.881825       250.0   
     2021-01  100.000000      0.000000          1  3060.840145       250.0   
     2021-02   97.484241   3060.840145          1  2879.614917       250.0   
     2021-03   95.266386   5759.229834          1  2807.170745       250.0   
@@ -368,14 +406,6 @@ print(p1.generate_forecast())
     2021-11   5277.788830        7625.0  Period-1  
     2021-12   5336.827175        7625.0  Period-1  
     2022-01   5453.463516        7750.0  Period-1  
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:240: RuntimeWarning: invalid value encountered in true_divide
-      (np.power(qi / rate, b) - 1)/(b * di)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:63: RuntimeWarning: divide by zero encountered in true_divide
-      return qi/np.power(1+b*di*time_array,1/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:80: RuntimeWarning: divide by zero encountered in true_divide
-      g = np.power(b*di*time_array+1,(b-1)/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:81: RuntimeWarning: divide by zero encountered in true_divide
-      h = np.power(b*di*ti+1,(b-1)/b)
 
 
 
@@ -412,13 +442,13 @@ sns.lineplot(data=prob_forecast, x = prob_forecast.index.to_timestamp(), y='oil_
 sns.lineplot(data=prob_forecast, x = prob_forecast.index.to_timestamp(), y='oil_rate',hue='iteration', ax=ax[1])
 ```
 
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:240: RuntimeWarning: invalid value encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:245: RuntimeWarning: invalid value encountered in true_divide
       (np.power(qi / rate, b) - 1)/(b * di)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:63: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:68: RuntimeWarning: divide by zero encountered in true_divide
       return qi/np.power(1+b*di*time_array,1/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:80: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:85: RuntimeWarning: divide by zero encountered in true_divide
       g = np.power(b*di*time_array+1,(b-1)/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:81: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:86: RuntimeWarning: divide by zero encountered in true_divide
       h = np.power(b*di*ti+1,(b-1)/b)
 
 
@@ -431,7 +461,7 @@ sns.lineplot(data=prob_forecast, x = prob_forecast.index.to_timestamp(), y='oil_
 
 
     
-![svg](output_18_2.svg)
+![png](output_19_2.png)
     
 
 
@@ -504,7 +534,7 @@ p1_cash = Period(**p1cash_dict)
 
 ### Generate forecast
 
-!!! note
+??? note
     Default working interest for a `CashFlowParameters` is 1
 
 
@@ -560,13 +590,15 @@ print(forecast)
     2021-11 -11152.689363        7625.0  Period-1  
     2021-12 -10680.382604        7625.0  Period-1  
     2022-01 -10622.291873        7750.0  Period-1  
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:240: RuntimeWarning: invalid value encountered in true_divide
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:245: RuntimeWarning: invalid value encountered in true_divide
       (np.power(qi / rate, b) - 1)/(b * di)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:63: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:68: RuntimeWarning: divide by zero encountered in true_divide
       return qi/np.power(1+b*di*time_array,1/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:80: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:85: RuntimeWarning: divide by zero encountered in true_divide
       g = np.power(b*di*time_array+1,(b-1)/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:81: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:86: RuntimeWarning: divide by zero encountered in true_divide
       h = np.power(b*di*ti+1,(b-1)/b)
 
 
@@ -645,15 +677,15 @@ fig, ax= plt.subplots(figsize=(15,7))
 cf_model[0].plot(cum=True, ax=ax)
 ```
 
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:344: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:352: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
 
 
 
     
-![svg](output_27_1.svg)
+![png](output_28_1.png)
     
 
 
@@ -811,17 +843,17 @@ p2_cashflow = p2_cash.generate_cashflow()
 
 ```
 
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:240: RuntimeWarning: invalid value encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:245: RuntimeWarning: invalid value encountered in true_divide
       (np.power(qi / rate, b) - 1)/(b * di)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:63: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:68: RuntimeWarning: divide by zero encountered in true_divide
       return qi/np.power(1+b*di*time_array,1/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:79: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:84: RuntimeWarning: divide by zero encountered in true_divide
       f = qi/(di*(b-1))
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:80: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:85: RuntimeWarning: divide by zero encountered in true_divide
       g = np.power(b*di*time_array+1,(b-1)/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:81: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:86: RuntimeWarning: divide by zero encountered in true_divide
       h = np.power(b*di*ti+1,(b-1)/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:82: RuntimeWarning: invalid value encountered in multiply
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:87: RuntimeWarning: invalid value encountered in multiply
       return f*(g-h)
 
 
@@ -837,23 +869,23 @@ for i in range(n_cashflows):
     p2_cashflow[i].plot(cum=True, ax=ax[i,1])
 ```
 
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:344: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:352: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:344: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:352: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:344: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:352: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
 
 
 
     
-![svg](output_33_1.svg)
+![png](output_34_1.png)
     
 
 
@@ -928,7 +960,7 @@ p2_cash.npv([0.1,0.17], freq_rate='A', freq_cashflow='M')
 
 Cashflow parameters values can also be evaluated with multiple iterations. 
 
-!!! note
+??? note
     When creating multiple iterations either on dca or cashflow parameters, the number of iterations must be the same in other to create element-wise models. 
 
 
@@ -984,13 +1016,13 @@ p3_forecast = p3_cash.generate_forecast()
 p3_cashflow = p3_cash.generate_cashflow()
 ```
 
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:240: RuntimeWarning: invalid value encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:245: RuntimeWarning: invalid value encountered in true_divide
       (np.power(qi / rate, b) - 1)/(b * di)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:63: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:68: RuntimeWarning: divide by zero encountered in true_divide
       return qi/np.power(1+b*di*time_array,1/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:80: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:85: RuntimeWarning: divide by zero encountered in true_divide
       g = np.power(b*di*time_array+1,(b-1)/b)
-    /home/scuervo91/dev/apps/dcapy/dcapy/dca/arps.py:81: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:86: RuntimeWarning: divide by zero encountered in true_divide
       h = np.power(b*di*ti+1,(b-1)/b)
 
 
@@ -1004,31 +1036,31 @@ for i in range(n_cashflows):
     p3_cashflow[i].plot(cum=True, ax=ax[i])
 ```
 
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:344: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:352: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:344: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:352: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:344: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:352: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:344: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:352: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:344: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:352: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
 
 
 
     
-![svg](output_37_1.svg)
+![png](output_38_1.png)
     
 
 
@@ -1107,7 +1139,7 @@ All classes in `dcapy` are based on Pydantic, hence they can be directly exporte
 print(p3_cash.dict(exclude={'forecast','cashflow'}, exclude_unset=True))
 ```
 
-    {'name': 'Period-1', 'cashflow_params': [{'name': 'fix_opex', 'value': -5000.0, 'target': 'opex', 'freq_value': 'M'}, {'name': 'var_opex', 'value': -12.0, 'target': 'opex', 'multiply': 'oil_volume'}, {'name': 'income', 'wi': 0.9, 'value': [20.0, 30.0, 40.0, 60.0, 80.0], 'target': 'income', 'multiply': 'oil_volume'}, {'name': 'capex_drill', 'periods': 1, 'value': -3000000.0, 'target': 'capex'}], 'dca': {'qi': 700.0, 'di': 0.3, 'b': 0.0, 'ti': datetime.date(2021, 1, 1), 'freq_di': <FreqEnum.A: 'A'>, 'fluid_rate': 250.0}, 'start': datetime.date(2021, 1, 1), 'end': datetime.date(2022, 1, 1), 'freq_output': 'M', 'rate_limit': 70.0}
+    {'name': 'Period-1', 'cashflow_params': [{'name': 'fix_opex', 'value': -5000.0, 'target': <TargetEnum.opex: 'opex'>, 'freq_value': <FreqEnum.M: 'M'>}, {'name': 'var_opex', 'value': -12.0, 'target': <TargetEnum.opex: 'opex'>, 'multiply': 'oil_volume'}, {'name': 'income', 'wi': 0.9, 'value': [20.0, 30.0, 40.0, 60.0, 80.0], 'target': <TargetEnum.income: 'income'>, 'multiply': 'oil_volume'}, {'name': 'capex_drill', 'periods': 1, 'value': -3000000.0, 'target': <TargetEnum.capex: 'capex'>}], 'dca': {'qi': 700.0, 'di': 0.3, 'b': 0.0, 'ti': datetime.date(2021, 1, 1), 'freq_di': <FreqEnum.A: 'A'>, 'fluid_rate': 250.0}, 'start': datetime.date(2021, 1, 1), 'end': datetime.date(2022, 1, 1), 'freq_output': <FreqEnum.M: 'M'>, 'rate_limit': 70.0}
 
 
 #### Export to json
@@ -1119,3 +1151,48 @@ print(p3_cash.json(exclude={'forecast','cashflow'}, exclude_unset=True))
 
     {"name": "Period-1", "cashflow_params": [{"name": "fix_opex", "value": -5000.0, "target": "opex", "freq_value": "M"}, {"name": "var_opex", "value": -12.0, "target": "opex", "multiply": "oil_volume"}, {"name": "income", "wi": 0.9, "value": [20.0, 30.0, 40.0, 60.0, 80.0], "target": "income", "multiply": "oil_volume"}, {"name": "capex_drill", "periods": 1, "value": -3000000.0, "target": "capex"}], "dca": {"qi": 700.0, "di": 0.3, "b": 0.0, "ti": "2021-01-01", "freq_di": "A", "fluid_rate": 250.0}, "start": "2021-01-01", "end": "2022-01-01", "freq_output": "M", "rate_limit": 70.0}
 
+
+
+```python
+p3_cash.tree()
+```
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="font-weight: bold">📉Period-1                                                                                   </span>
+</pre>
+
+
+
+
+#### Export to cloud
+
+Dcapy has integrated connection with an API hosted on [Heroku](https://www.heroku.com) that allows to save your models on the cloud. This allows you to create, update and delete your models on a remote database whicgh is accesible throught a single account (with Oauth2 Authentication).
+
+
+```python
+from dcapy.auth import Credential
+```
+
+
+```python
+cred = Credential(token='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImIyZDQ5NjMyLWM0MzEtNDAzYi04OTEyLTJiZGIyOTA3NTMxNCIsIm5hbWUiOiJTYW50aWFnbyIsImxhc3RfbmFtZSI6IkN1ZXJ2byIsInVzZXJuYW1lIjoic2N1ZXJ2bzkxIiwiZXhwIjoxNjI2OTI2NTk3fQ.n3HuheJvoQKF9RNKTC9gEstC449EWd2qsrWR7f30V2U')
+```
+
+
+```python
+p3_cash.insert_db(cred, 'Period-Cash tutorial1')
+```
+
+
+
+
+    '65f4790e-a515-4a14-bb12-9109010ed5e9'
+
+
+
+
+```python
+
+```

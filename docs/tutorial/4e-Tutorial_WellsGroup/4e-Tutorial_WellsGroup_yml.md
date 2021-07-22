@@ -16,6 +16,7 @@ from dcapy import dca
 from dcapy.schedule import Well, Period, Scenario, WellsGroup,  model_from_dict
 from dcapy.cashflow import CashFlowParams, CashFlow
 from dcapy.wiener import Brownian, GeometricBrownian, MeanReversion
+from dcapy.auth import Credential
 import seaborn as sns 
 from datetime import date
 import matplotlib.pyplot as plt
@@ -23,6 +24,11 @@ import copy
 import yaml
 import json
 from scipy import stats
+```
+
+
+```python
+cred = Credential(token='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImIyZDQ5NjMyLWM0MzEtNDAzYi04OTEyLTJiZGIyOTA3NTMxNCIsIm5hbWUiOiJTYW50aWFnbyIsImxhc3RfbmFtZSI6IkN1ZXJ2byIsInVzZXJuYW1lIjoic2N1ZXJ2bzkxIiwiZXhwIjoxNjI2OTI2NTk3fQ.n3HuheJvoQKF9RNKTC9gEstC449EWd2qsrWR7f30V2U')
 ```
 
 In a file called `YML_example1.yml` is a WellsGroup case where are defined 6 wells. Four of them have one scenario and others two have two scenarios with two Periods. 
@@ -362,7 +368,7 @@ with open('YML_example1.yml','r') as file:
     case_dict = yaml.load(file)
 ```
 
-    <ipython-input-2-33d4e64ac547>:2: YAMLLoadWarning: calling yaml.load() without Loader=... is deprecated, as the default Loader is unsafe. Please read https://msg.pyyaml.org/load for full details.
+    <ipython-input-8-33d4e64ac547>:2: YAMLLoadWarning: calling yaml.load() without Loader=... is deprecated, as the default Loader is unsafe. Please read https://msg.pyyaml.org/load for full details.
       case_dict = yaml.load(file)
 
 
@@ -379,6 +385,91 @@ print(type(case))
 
 
 `WellsGroup` has a method to make the all the factorial combinations of wells scenarios. By calling it with no arguments it creates a full-factorial combinations.
+
+
+```python
+case.insert_db(cred, description='Wellsgroup2')
+```
+
+
+
+
+    '5f625d24-517d-4890-8067-f8e4da41f779'
+
+
+
+
+```python
+case.update_db(cred, description='Tutorial-Wellsgroup')
+```
+
+
+
+
+    '5f625d24-517d-4890-8067-f8e4da41f779'
+
+
+
+
+```python
+cased = WellsGroup()
+
+cased.get_db("5f625d24-517d-4890-8067-f8e4da41f779",cred)
+```
+
+
+```python
+type(cased)
+```
+
+
+
+
+    dcapy.schedule.schedule.WellsGroup
+
+
+
+### Get the tree Schema
+
+
+```python
+case.tree()
+```
+
+
+
+
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"><span style="font-weight: bold">🏭fdp_field                                                                                  </span>
+┣━━ <span style="font-weight: bold">🗼DC2                                                                                    </span>
+┃   ┗━━ <span style="font-weight: bold">🔀base                                                                               </span>
+┃       ┗━━ <span style="font-weight: bold">📉pdp                                                                            </span>
+┣━━ <span style="font-weight: bold">🗼DC3                                                                                    </span>
+┃   ┗━━ <span style="font-weight: bold">🔀base                                                                               </span>
+┃       ┗━━ <span style="font-weight: bold">📉pdp                                                                            </span>
+┣━━ <span style="font-weight: bold">🗼DC4                                                                                    </span>
+┃   ┗━━ <span style="font-weight: bold">🔀base                                                                               </span>
+┃       ┗━━ <span style="font-weight: bold">📉pdp                                                                            </span>
+┣━━ <span style="font-weight: bold">🗼DC5                                                                                    </span>
+┃   ┗━━ <span style="font-weight: bold">🔀base                                                                               </span>
+┃       ┗━━ <span style="font-weight: bold">📉pdp                                                                            </span>
+┣━━ <span style="font-weight: bold">🗼well-1                                                                                 </span>
+┃   ┣━━ <span style="font-weight: bold">🔀highfr                                                                             </span>
+┃   ┃   ┣━━ <span style="font-weight: bold">📉fm1                                                                            </span>
+┃   ┃   ┗━━ <span style="font-weight: bold">📉fm2                                                                            </span>
+┃   ┗━━ <span style="font-weight: bold">🔀mediumfr                                                                           </span>
+┃       ┣━━ <span style="font-weight: bold">📉fm1                                                                            </span>
+┃       ┗━━ <span style="font-weight: bold">📉fm2                                                                            </span>
+┗━━ <span style="font-weight: bold">🗼well-2                                                                                 </span>
+    ┣━━ <span style="font-weight: bold">🔀highfr                                                                             </span>
+    ┃   ┣━━ <span style="font-weight: bold">📉fm2                                                                            </span>
+    ┃   ┗━━ <span style="font-weight: bold">📉fm1                                                                            </span>
+    ┗━━ <span style="font-weight: bold">🔀mediumfr                                                                           </span>
+        ┣━━ <span style="font-weight: bold">📉fm2                                                                            </span>
+        ┗━━ <span style="font-weight: bold">📉fm1                                                                            </span>
+</pre>
+
+
+
 
 
 ```python
@@ -440,7 +531,7 @@ sns.lineplot(data=fwn, x=fwn.index.to_timestamp(), y='oil_rate', hue='well',styl
 
 
     
-![svg](output_12_1.svg)
+![png](output_19_1.png)
     
 
 
@@ -643,7 +734,7 @@ print(fcf_0.multiply(1e-6).round(2))
 
 Here there are two additional features in the Cashflow Parameter definition. 
 
-1. If you cant to assign an additional Capex to the project that does not assigned to a single well but the case itself, for example a Purchase price, infraestructure investment, etc..., you can declare a `CashFlowParam` with the key argument `general` set to **True**. What it does is not to pass the cashflow parameter to each well instead make a *general* cashflow for the model. 
+1. If you want to assign an additional Capex to the project that does not assigned to a single well but the case itself, for example a Purchase price, infraestructure investment, etc..., you can declare a `CashFlowParam` with the key argument `general` set to **True**. What it does is not to pass the cashflow parameter to each well instead make a *general* cashflow for the model. 
 
 
 ```python
@@ -653,7 +744,7 @@ case.cashflow_params[3]
 
 
 
-    CashFlowParams(name='buy', wi=1.0, periods=1, value=-15500000.0, target='capex', multiply=None, agg='mean', depends=False, iter=1, general=True, freq_value=None)
+    CashFlowParams(name='buy', wi=1.0, periods=1, value=-15500000.0, target=<TargetEnum.capex: 'capex'>, multiply=None, agg='mean', depends=False, iter=1, general=True, freq_value=None)
 
 
 
@@ -667,7 +758,7 @@ case.cashflow_params[2]
 
 
 
-    CashFlowParams(name='income', wi=0.92, periods=None, value=MeanReversion(initial_condition=60.0, ti=datetime.date(2021, 4, 1), steps=11, processes=1, generator=ProbVar(dist='norm', kw={'loc': 0.0, 'scale': 13.13}, factor=1.0, seed=None), freq_input='A', freq_output='D', m=46.77, eta=0.112653), target='income', multiply='oil_volume', agg='mean', depends=False, iter=1, general=False, freq_value=None)
+    CashFlowParams(name='income', wi=0.92, periods=None, value=MeanReversion(initial_condition=60.0, ti=datetime.date(2021, 4, 1), steps=11, processes=1, generator=ProbVar(dist='norm', kw={'loc': 0.0, 'scale': 13.13}, factor=1.0, seed=None), freq_input=<FreqEnum.A: 'A'>, freq_output='D', m=46.77, eta=0.112653), target=<TargetEnum.income: 'income'>, multiply='oil_volume', agg='mean', depends=False, iter=1, general=False, freq_value=None)
 
 
 
@@ -697,7 +788,7 @@ oil_price.plot(legend=False)
 
 
     
-![svg](output_22_1.svg)
+![png](output_29_1.png)
     
 
 
@@ -721,13 +812,13 @@ sns.displot(npv['npv'].values, kde=True)
 
 
 
-    <seaborn.axisgrid.FacetGrid at 0x7f469598e760>
+    <seaborn.axisgrid.FacetGrid at 0x7f47ff6ef580>
 
 
 
 
     
-![svg](output_24_2.svg)
+![png](output_31_2.png)
     
 
 
@@ -738,15 +829,15 @@ Plot any of the cases
 cwn[38].plot(cum=True,format='m')
 ```
 
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo91/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
 
 
 
     
-![svg](output_26_1.svg)
+![png](output_33_1.png)
     
 
 
@@ -758,7 +849,7 @@ with open('YML_example1.yml','r') as file:
 lp = WellsGroup(**case_dict)
 ```
 
-    <ipython-input-13-ebe3c98787ec>:2: YAMLLoadWarning: calling yaml.load() without Loader=... is deprecated, as the default Loader is unsafe. Please read https://msg.pyyaml.org/load for full details.
+    <ipython-input-26-ebe3c98787ec>:2: YAMLLoadWarning: calling yaml.load() without Loader=... is deprecated, as the default Loader is unsafe. Please read https://msg.pyyaml.org/load for full details.
       case_dict = yaml.load(file)
 
 
@@ -782,3 +873,59 @@ cwn[0].fcf()['cum_fcf'].values
             1.13126400e+08,  1.12473869e+08])
 
 
+
+
+```python
+npv_list = []
+for i,s in enumerate(sc):
+
+    fwn = case.generate_forecast(wells=s,freq_output='A',iter=50, seed=21)
+    cwn = case.generate_cashflow(wells=s,freq_output='A')
+
+    npv = case.npv([0.15], freq_rate='A', freq_cashflow='A')/1e6
+    npv['sc'] = i
+    npv_list.append(npv)
+
+    npv_df = pd.concat(npv_list, axis=0)
+    print(npv['npv'].quantile([0.1,0.5,0.9]))
+sns.displot(npv_df, x='npv', hue='sc', multiple="stack")
+
+
+
+```
+
+    0.1   -4.309976
+    0.5    3.403842
+    0.9    9.881238
+    Name: npv, dtype: float64
+    0.1    10.255532
+    0.5    30.245220
+    0.9    52.281651
+    Name: npv, dtype: float64
+    0.1     9.219426
+    0.5    30.774217
+    0.9    52.175129
+    Name: npv, dtype: float64
+    0.1    23.561044
+    0.5    59.131838
+    0.9    95.542097
+    Name: npv, dtype: float64
+
+
+
+
+
+    <seaborn.axisgrid.FacetGrid at 0x7f4802035d00>
+
+
+
+
+    
+![png](output_37_2.png)
+    
+
+
+
+```python
+
+```
