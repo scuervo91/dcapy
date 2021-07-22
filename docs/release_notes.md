@@ -1,5 +1,8 @@
 # Release Notes
 
+## 0.1.4
+### Fixes
+* 👷 Fix exporting model to file yml. Drop `exclude_unset`
 
 ## 0.1.3
 ### Features
