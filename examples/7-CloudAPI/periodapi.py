@@ -1,0 +1,14 @@
+from dcapy.auth import Credential
+from dcapy.schedule import Period
+
+cred = Credential()
+cred.login('uuser','password')
+
+p = Period()
+
+p.get_db('820f6684-1e30-4d55-bff6-ae4363b9d000',cred)
+
+print(p)
+
+
+print(p.generate_forecast())

@@ -67,7 +67,7 @@ p1
 
 
 
-    Period(name='pdp', cashflow_params=[CashFlowParams(name='capex', wi=1.0, periods=None, value=ChgPts(date=[datetime.date(2021, 1, 1)], value=[-5000000.0]), target='capex', multiply=None, agg='mean', depends=False, iter=1, general=False, freq_value=None)], cashflow=None, forecast=None, seed=None, iter=1, ppf=None, dca=Wor(bsw=0.3, slope=[2e-05, 1e-05], fluid_rate=1000.0, ti=datetime.date(2021, 1, 1), seed=None, gor=0.3, glr=None), start=datetime.date(2021, 1, 1), end=datetime.date(2022, 1, 1), time_list=None, freq_input='M', freq_output='M', rate_limit=None, cum_limit=None, depends=None)
+    Period(name='pdp', cashflow_params=[CashFlowParams(name='capex', wi=1.0, periods=None, value=ChgPts(date=[datetime.date(2021, 1, 1)], value=[-5000000.0]), target=<TargetEnum.capex: 'capex'>, multiply=None, agg='mean', depends=False, iter=1, general=False, freq_value=None)], cashflow=None, forecast=None, seed=None, iter=1, ppf=None, description=None, id=None, dca=Wor(bsw=0.3, slope=[2e-05, 1e-05], fluid_rate=1000.0, ti=datetime.date(2021, 1, 1), seed=None, gor=0.3, glr=None), start=datetime.date(2021, 1, 1), end=datetime.date(2022, 1, 1), time_list=None, freq_input=<FreqEnum.M: 'M'>, freq_output=<FreqEnum.M: 'M'>, rate_limit=None, cum_limit=None, depends=None, type=<SchemasEnum.period: 'period'>)
 
 
 
@@ -104,7 +104,7 @@ p2
 
 
 
-    Period(name='pud', cashflow_params=[CashFlowParams(name='capex', wi=1.0, periods=None, value=ChgPts(date=[datetime.date(2022, 1, 1)], value=[-450000.0]), target='capex', multiply=None, agg='mean', depends=False, iter=1, general=False, freq_value=None)], cashflow=None, forecast=None, seed=None, iter=1, ppf=None, dca=Wor(bsw=0.3, slope=[2e-05], fluid_rate=1000.0, ti=datetime.date(2022, 1, 1), seed=None, gor=0.3, glr=None), start=datetime.date(2022, 1, 1), end=datetime.date(2023, 1, 1), time_list=None, freq_input='M', freq_output='M', rate_limit=None, cum_limit=None, depends=None)
+    Period(name='pud', cashflow_params=[CashFlowParams(name='capex', wi=1.0, periods=None, value=ChgPts(date=[datetime.date(2022, 1, 1)], value=[-450000.0]), target=<TargetEnum.capex: 'capex'>, multiply=None, agg='mean', depends=False, iter=1, general=False, freq_value=None)], cashflow=None, forecast=None, seed=None, iter=1, ppf=None, description=None, id=None, dca=Wor(bsw=0.3, slope=[2e-05], fluid_rate=1000.0, ti=datetime.date(2022, 1, 1), seed=None, gor=0.3, glr=None), start=datetime.date(2022, 1, 1), end=datetime.date(2023, 1, 1), time_list=None, freq_input=<FreqEnum.M: 'M'>, freq_output=<FreqEnum.M: 'M'>, rate_limit=None, cum_limit=None, depends=None, type=<SchemasEnum.period: 'period'>)
 
 
 
@@ -334,7 +334,7 @@ sns.lineplot(data=s1_f, x=s1_f.index.to_timestamp(), y='oil_rate', hue='iteratio
 
 
     
-![svg](output_10_1.svg)
+![png](output_10_1.png)
     
 
 
@@ -802,19 +802,19 @@ for i in range(n_cashflows):
     s1_c[i].plot(cum=True, ax=ax[i])
 ```
 
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
 
 
 
     
-![svg](output_13_1.svg)
+![png](output_13_1.png)
     
 
 
@@ -953,38 +953,40 @@ Generate Forecast
 
 
 ```python
-s2_f = s2.generate_forecast(iter=10)
+s2_f = s2.generate_forecast(iter=10, seed=21)
 print(s2_f)
 ```
 
              oil_rate       oil_cum  iteration     oil_volume period    scenario
     date                                                                        
-    2021  1387.644790  0.000000e+00          0  436711.964173    pdp  Dependency
-    2022  1023.718153  4.367120e+05          0  379445.465739    pdp  Dependency
-    2023   755.235680  7.588909e+05          0  279931.301016    pdp  Dependency
-    2024   557.165985  9.965746e+05          0  206721.365746    pdp  Dependency
-    2025   410.700071  1.172334e+06          0  152506.186227    pdp  Dependency
+    2021  1489.607150  0.000000e+00          0  468800.999434    pdp  Dependency
+    2022  1098.939651  4.688010e+05          0  407326.632111    pdp  Dependency
+    2023   810.729430  8.146533e+05          0  300500.294141    pdp  Dependency
+    2024   598.105827  1.069802e+06          0  221910.986683    pdp  Dependency
+    2025   440.877785  1.258475e+06          0  163712.145277    pdp  Dependency
     ...           ...           ...        ...            ...    ...         ...
-    2025  3000.000000  0.000000e+00          8            NaN    pud  Dependency
-    2026  2222.454662  9.460135e+05          8  823418.764128    pud  Dependency
-    2027  1646.434908  1.646838e+06          8  700824.033745    pud  Dependency
-    2026  3000.000000  0.000000e+00          9            NaN    pud  Dependency
+    2027  2222.454662  9.460135e+05          7  946013.494512    pud  Dependency
+    2026  3000.000000  0.000000e+00          8  473006.747256    pud  Dependency
+    2027  2222.454662  9.460135e+05          8  946013.494512    pud  Dependency
+    2026  3000.000000  0.000000e+00          9  473006.747256    pud  Dependency
     2027  2222.454662  9.460135e+05          9  946013.494512    pud  Dependency
     
     [80 rows x 6 columns]
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:240: RuntimeWarning: invalid value encountered in true_divide
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:245: RuntimeWarning: invalid value encountered in true_divide
       (np.power(qi / rate, b) - 1)/(b * di)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:63: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:68: RuntimeWarning: divide by zero encountered in true_divide
       return qi/np.power(1+b*di*time_array,1/b)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:80: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:85: RuntimeWarning: divide by zero encountered in true_divide
       g = np.power(b*di*time_array+1,(b-1)/b)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:81: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:86: RuntimeWarning: divide by zero encountered in true_divide
       h = np.power(b*di*ti+1,(b-1)/b)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:63: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:68: RuntimeWarning: divide by zero encountered in true_divide
       return qi/np.power(1+b*di*time_array,1/b)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:80: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:85: RuntimeWarning: divide by zero encountered in true_divide
       g = np.power(b*di*time_array+1,(b-1)/b)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:81: RuntimeWarning: divide by zero encountered in true_divide
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/dca/arps.py:86: RuntimeWarning: divide by zero encountered in true_divide
       h = np.power(b*di*ti+1,(b-1)/b)
 
 
@@ -1002,7 +1004,7 @@ sns.lineplot(data=s2_f,  x=s2_f.index.to_timestamp(), y='oil_rate', hue='iterati
 
 
     
-![svg](output_21_1.svg)
+![png](output_21_1.png)
     
 
 
@@ -1014,6 +1016,206 @@ print(f'Number of cashflow models {len(s2_c)}')
 ```
 
     Number of cashflow models 10
+
+
+
+```python
+s2_c[0].fcf()
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>income_Dependency-pdp</th>
+      <th>income_Dependency-pud</th>
+      <th>total_income</th>
+      <th>fix_opex_Dependency-pdp</th>
+      <th>var_opex_Dependency-pdp</th>
+      <th>fix_opex_Dependency-pud</th>
+      <th>var_opex_Dependency-pud</th>
+      <th>total_opex</th>
+      <th>capex_Dependency-pdp</th>
+      <th>wo_Dependency-pud</th>
+      <th>abandon_Dependency-pud</th>
+      <th>total_capex</th>
+      <th>fcf</th>
+      <th>cum_fcf</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>2021</th>
+      <td>2.812806e+07</td>
+      <td>0.000000e+00</td>
+      <td>2.812806e+07</td>
+      <td>-5000.0</td>
+      <td>-2.344005e+06</td>
+      <td>0.0</td>
+      <td>0.000000e+00</td>
+      <td>-2.349005e+06</td>
+      <td>-5000000.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>-5000000.0</td>
+      <td>2.077905e+07</td>
+      <td>2.077905e+07</td>
+    </tr>
+    <tr>
+      <th>2022</th>
+      <td>2.443960e+07</td>
+      <td>0.000000e+00</td>
+      <td>2.443960e+07</td>
+      <td>-5000.0</td>
+      <td>-2.036633e+06</td>
+      <td>0.0</td>
+      <td>0.000000e+00</td>
+      <td>-2.041633e+06</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>2.239796e+07</td>
+      <td>4.317702e+07</td>
+    </tr>
+    <tr>
+      <th>2023</th>
+      <td>1.803002e+07</td>
+      <td>0.000000e+00</td>
+      <td>1.803002e+07</td>
+      <td>-5000.0</td>
+      <td>-1.502501e+06</td>
+      <td>0.0</td>
+      <td>0.000000e+00</td>
+      <td>-1.507501e+06</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.652252e+07</td>
+      <td>5.969954e+07</td>
+    </tr>
+    <tr>
+      <th>2024</th>
+      <td>1.331466e+07</td>
+      <td>0.000000e+00</td>
+      <td>1.331466e+07</td>
+      <td>-5000.0</td>
+      <td>-1.109555e+06</td>
+      <td>0.0</td>
+      <td>0.000000e+00</td>
+      <td>-1.114555e+06</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>1.220010e+07</td>
+      <td>7.189964e+07</td>
+    </tr>
+    <tr>
+      <th>2025</th>
+      <td>9.822729e+06</td>
+      <td>0.000000e+00</td>
+      <td>9.822729e+06</td>
+      <td>-5000.0</td>
+      <td>-8.185607e+05</td>
+      <td>0.0</td>
+      <td>0.000000e+00</td>
+      <td>-8.235607e+05</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>0.0</td>
+      <td>8.999168e+06</td>
+      <td>8.089881e+07</td>
+    </tr>
+    <tr>
+      <th>2026</th>
+      <td>-3.775426e+07</td>
+      <td>2.838040e+07</td>
+      <td>-9.373852e+06</td>
+      <td>-5000.0</td>
+      <td>3.146188e+06</td>
+      <td>-5000.0</td>
+      <td>-2.365034e+06</td>
+      <td>7.711544e+05</td>
+      <td>0.0</td>
+      <td>-500000.0</td>
+      <td>-300000.0</td>
+      <td>-800000.0</td>
+      <td>-9.402698e+06</td>
+      <td>7.149611e+07</td>
+    </tr>
+    <tr>
+      <th>2027</th>
+      <td>0.000000e+00</td>
+      <td>5.676081e+07</td>
+      <td>5.676081e+07</td>
+      <td>0.0</td>
+      <td>0.000000e+00</td>
+      <td>-5000.0</td>
+      <td>-4.730067e+06</td>
+      <td>-4.735067e+06</td>
+      <td>0.0</td>
+      <td>-500000.0</td>
+      <td>-300000.0</td>
+      <td>-800000.0</td>
+      <td>5.122574e+07</td>
+      <td>1.227219e+08</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+s2.npv([0.15], freq_rate='A',freq_cashflow='A').reset_index().to_dict()
+```
+
+
+
+
+    {'index': {0: 0.1499999999999999,
+      1: 0.1499999999999999,
+      2: 0.1499999999999999,
+      3: 0.1499999999999999,
+      4: 0.1499999999999999,
+      5: 0.1499999999999999,
+      6: 0.1499999999999999,
+      7: 0.1499999999999999,
+      8: 0.1499999999999999,
+      9: 0.1499999999999999},
+     'npv': {0: 83387511.45599285,
+      1: 82960222.54647115,
+      2: 91277731.89554133,
+      3: 88872673.70059997,
+      4: 89139483.06955868,
+      5: 85885826.29488969,
+      6: 82277300.0707481,
+      7: 82070212.93389057,
+      8: 91900627.35896699,
+      9: 83671291.75916964},
+     'iteration': {0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9}}
+
 
 
 
@@ -1037,59 +1239,143 @@ for idx in range(n_cashflows):
 ```
 
     0 (1, 0, 0)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
+
+
     1 (2, 0, 0)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
+
+
     2 (3, 0, 0)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
+
+
     3 (4, 0, 0)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
+
+
     4 (0, 1, 0)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
+
+
     5 (1, 1, 0)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
+
+
     6 (2, 1, 0)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
+
+
     7 (3, 1, 0)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
+
+
     8 (4, 1, 0)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
+
+
     9 (0, 0, 1)
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:342: UserWarning: FixedFormatter should only be used together with FixedLocator
+
+
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:351: UserWarning: FixedFormatter should only be used together with FixedLocator
       grax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks])
-    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:350: UserWarning: FixedFormatter should only be used together with FixedLocator
+    /home/scuervo/Documents/dev/apps/dcapy/dcapy/cashflow/cashflow.py:359: UserWarning: FixedFormatter should only be used together with FixedLocator
       spax.set_yticklabels([fmt.format(i/format_dict[format]['factor']) for i in ticks_cum])
 
 
 
     
-![svg](output_23_1.svg)
+![png](output_25_20.png)
     
 
+
+
+```python
+from dcapy.auth import Credential
+```
+
+
+```python
+cred = Credential(token='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImIyZDQ5NjMyLWM0MzEtNDAzYi04OTEyLTJiZGIyOTA3NTMxNCIsIm5hbWUiOiJTYW50aWFnbyIsImxhc3RfbmFtZSI6IkN1ZXJ2byIsInVzZXJuYW1lIjoic2N1ZXJ2bzkxIiwiZXhwIjoxNjI2OTI2NTk3fQ.n3HuheJvoQKF9RNKTC9gEstC449EWd2qsrWR7f30V2U')
+```
+
+
+```python
+s2.insert_db(cred, 'Scenario-Cash tutorial')
+```
+
+
+
+
+    '01de434e-d393-4f3e-8ecf-98e86b4dd39c'
+
+
+
+
+```python
+sd = Scenario()
+
+sd.get_db('01de434e-d393-4f3e-8ecf-98e86b4dd39c',cred)
+```
+
+
+```python
+type(sd)
+```
+
+
+
+
+    dcapy.schedule.schedule.Scenario
+
+
+
+
+```python
+
+```

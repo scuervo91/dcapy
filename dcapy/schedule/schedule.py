@@ -11,10 +11,13 @@ from rich.tree import Tree
 from rich.panel import Panel
 from rich.layout import Layout
 from rich.columns import Columns
+import requests
+from enum import Enum
 #Local Imports
 from ..dca import Arps, Wor, FreqEnum, Forecast, converter_factor
 from ..cashflow import CashFlowModel, CashFlow, CashFlowParams, ChgPts, npv_cashflows, irr_cashflows
 from ..console import console
+from ..auth import Credential
 import traceback
 # Put together all classes of DCA in a Union type. Pydantic uses this type to validate
 # the input dca is a subclass of DCA. 
@@ -28,13 +31,20 @@ freq_format={
     'A':'%Y'
 }
 
+class SchemasEnum(str, Enum):
+    period = 'period'
+    scenario = 'scenario'
+    well = 'well'
+    wellsgroup = 'wellsgroup'
+
+
 class Depends(BaseModel):
     period : str = Field(...)
     delay : Union[timedelta,int] = Field(None)
   
     
 class ScheduleBase(BaseModel):
-	name:str
+	name:str = Field(None)
 	cashflow_params : Optional[List[CashFlowParams]] = Field(None)
 	cashflow : Optional[List[CashFlowModel]] = Field(None)
 	forecast: Optional[Forecast] = Field(None)
@@ -42,6 +52,7 @@ class ScheduleBase(BaseModel):
 	iter : int = Field(1, ge=1)
 	ppf : Optional[float] = Field(None, ge=0, le=1)
 	description: str = Field(None)
+	id: str = Field(None)
  
 	class Config:
 		arbitrary_types_allowed = True
@@ -67,23 +78,106 @@ class ScheduleBase(BaseModel):
     
 	#def tree(self):
 	#	node_tree = Tree(self.name)
+	def get_db(self,key:str, cred:Credential):
+		end_point = f'api/v1/models/{self.type.value}/'
+		headers = {
+			'accept': 'application/json',
+			'Authorization': f'Bearer {cred.token}'
+		}	
+		try:
+			r = requests.get(f'{cred.url}{end_point}{key}', headers=headers)
+			r.raise_for_status()
+			data = json.loads(r.text)
+			dict_data = data['case']
+			for i in dict_data:
+				setattr(self,i,dict_data[i]) 
+		except requests.exceptions.HTTPError as err:
+			print(err)
+		else:
+			self.id = key 
+  
+	def insert_db(self,cred:Credential, description:str=None):
+		end_point = f'api/v1/models/{self.type.value}'
+		headers = {
+			'accept': 'application/json',
+			'Authorization': f'Bearer {cred.token}',
+			'Content-Type':'application/json'
+		}
+		model = json.loads(self.json(exclude_unset=True))
+		data = {'model':model}
+		if description:
+			data['description'] = description
+		try:
+			r = requests.post(f'{cred.url}{end_point}', headers=headers, json=data)
+			r.raise_for_status()
+			data = json.loads(r.text)
+			
+		except requests.exceptions.HTTPError as err:
+			print(err)
+		else:
+			self.id = data['id']
+			return data['id']
+
+	def update_db(self, cred:Credential, description:str=None):
+		if self.id is None:
+			raise ValueError('Model has no Key')
+		end_point = f'api/v1/models/{self.type.value}/'
+		headers = {
+			'accept': 'application/json',
+			'Authorization': f'Bearer {cred.token}'
+		}
+		model = json.loads(self.json(exclude_unset=True))
+		data = {'model':model}
+		if description:
+			data['description'] = description
+		try:
+			r = requests.put(f'{cred.url}{end_point}{self.id}', headers=headers, json=data)
+			r.raise_for_status()
+			data = json.loads(r.text)
+		except requests.exceptions.HTTPError as err:
+			print(err)
+		else:
+			return data['id']
+			
+   
+	def delete_db(self, cred:Credential, description:str=None):
+		if self.id is None:
+			raise ValueError('Model has no Key')
+		end_point = f'api/v1/models{self.type.value}/'
+		headers = {
+			'accept': 'application/json',
+			'Authorization': f'Bearer {cred.token}'
+		}
+		model = json.loads(self.json(exclude_unset=True))
+		data = {'model':model}
+		if description:
+			data['description'] = description
+		try:
+			r = requests.delete(f'{cred.url}{end_point}{self.id}', headers=headers, json=data)
+			r.raise_for_status()
+			data = json.loads(r.text)
+		except requests.exceptions.HTTPError as err:
+			print(err)
+		else:
+			return data['id']
   
 class Period(ScheduleBase):
-	dca : union_classes_dca 
-	start: Union[int,date]
-	end: Optional[Union[int,date]]
+	dca : union_classes_dca = Field(None)
+	start: Union[int,date] = Field(None)
+	end: Optional[Union[int,date]] = Field(None)
 	time_list : Optional[List[Union[int,date]]] = Field(None)
 	freq_input: FreqEnum = Field('D')
 	freq_output: FreqEnum = Field('D')
 	rate_limit: Optional[float] = Field(None, ge=0)
 	cum_limit: Optional[float] = Field(None, ge=0)
 	depends: Optional[Depends] = Field(None)
+	type: SchemasEnum = Field(SchemasEnum.period, const=True)
 
-	@validator('end')
-	def start_end_match_type(cls,v,values):
-	    if type(v) != type(values['start']):
-	        raise ValueError('start and end must be the same type')
-	    return v
+	# @validator('end')
+	# def start_end_match_type(cls,v,values):
+	#     if type(v) != type(values['start']):
+	#         raise ValueError('start and end must be the same type')
+	#     return v
 
 	class Config:
 		arbitrary_types_allowed = True
@@ -303,12 +397,13 @@ class Period(ScheduleBase):
 		panel_text = f'{emoji}\n' + text
 		panel = Panel(panel_text,title=f'[{title_style}]{self.name}[/{title_style}]')
 		return panel
-  
+
 class Scenario(ScheduleBase):
-	periods: Union[List[Period],Dict[str,Period]]
+	periods: Union[List[Period],Dict[str,Period]] = Field(None)
 	freq_output: str = Field('D')
+	type: SchemasEnum = Field(SchemasEnum.scenario, const=True)
  
-	@validator('periods', always=True)
+	@validator('periods')
 	def match_periods_freqs(cls,v):
 		if isinstance(v,list):
 			v = {i.name:i for i in v}
@@ -541,13 +636,13 @@ class Scenario(ScheduleBase):
 			return panel
 
 class Well(ScheduleBase):
-	scenarios : Union[List[Scenario],Dict[str,Scenario]]
- 
+	scenarios : Union[List[Scenario],Dict[str,Scenario]] = Field(None)
+	type: SchemasEnum = Field(SchemasEnum.well, const=True)
 	class Config:
 		arbitrary_types_allowed = True
 		validate_assignment = True
 
-	@validator('scenarios', always=True)
+	@validator('scenarios')
 	def match_periods_freqs(cls,v):
 		if isinstance(v,list):
 			v = {i.name:i for i in v}
@@ -724,13 +819,14 @@ class Well(ScheduleBase):
 
    
 class WellsGroup(ScheduleBase):
-	wells : Union[List[Well],Dict[str,Well]]
+	wells : Union[List[Well],Dict[str,Well]] = Field(None)
+	type: SchemasEnum = Field(SchemasEnum.wellsgroup, const=True)
 
 	class Config:
 		arbitrary_types_allowed = True
 		validate_assignment = True
 
-	@validator('wells', always=True)
+	@validator('wells')
 	def match_periods_freqs(cls,v):
 		if isinstance(v,list):
 			v = {i.name:i for i in v}
