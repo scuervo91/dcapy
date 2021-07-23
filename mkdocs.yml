@@ -24,25 +24,25 @@ nav:
     #- cashflow: cashflow-reference.md 
     #- weiner: wiener-reference.md 
   - Tutorial:
-    - Intro: tutorial/1-Intro.md
+    - Intro: examples/1-Intro.md
     - Arps Declination:
-      - Arps Basics: tutorial/1a-Tutorial-Arps_basic_dca.md
-      - Arps Class: tutorial/1b-Tutorial-Arps_Class/1b-Tutorial-Arps_Class.md
-      - Wor Basis&Class: tutorial/1c-Tutorial-Wor_basic.md
-      - Probabilistic Class: tutorial/1d-Tutorial-Probabilistic/1d-Tutorial_Probabilistic_Variables.md
-      - Data Fitting Aprs and Wor: tutorial/1e-Tutorial-fitting/1e-Tutorial_Fit data.md
+      - Arps Basics: examples/1-basics/1a-Tutorial-Arps_basic_dca.ipynb
+      - Arps Class: examples/1-basics/1b-Tutorial-Arps_Class.ipynb
+      - Wor Basis&Class: examples/1-basics/1c-Tutorial-Wor_basic.ipynb
+      - Probabilistic Class: examples/1-basics/1d-Tutorial_Probabilistic_Variables.ipynb
+      - Data Fitting Aprs and Wor: examples/1-basics/1e-Tutorial_Fit data.ipynb
     - Cashflows:
-      - Cashflow Basics: tutorial/2a-Tutorial_Cashflow_basics/2a-Cashflow Basics.md
+      - Cashflow Basics: examples/2-cashflow/2a-Cashflow Basics.ipynb
     - Wiener Proccesses:
-      - Wiener Proccesses: tutorial/3a-Tutorial-Wiener/3-Wiener_procces.md
+      - Wiener Proccesses: examples/3-Wiener/3-Wiener_procces.ipynb
     - Forecast Scheduling:
-      - Introduction: tutorial/4a-Tutorial_Scheduling_intro.md
-      - Period Class : tutorial/4b-Tutorial_Period/4b-Tutorial_Period.md
-      - Scenario Class : tutorial/4c-Tutorial_Scenario/4c-Tutorial_Scenario.md
-      - Wells Class : tutorial/4d-Tutorial_Wells/4d-Tutorial_Wells.md
-      - WellsGroup Class : tutorial/4e-Tutorial_WellsGroup/4e-Tutorial_WellsGroup_yml.md
+      - Introduction: examples/4-schedules/4a-Tutorial_Scheduling_intro.ipynb
+      - Period Class : examples/4-schedules/4b-Tutorial_Period.ipynb
+      - Scenario Class : examples/4-schedules/4c-Tutorial_Scenario.ipynb
+      - Wells Class : examples/4-schedules/4d-Tutorial_Wells.ipynb
+      - WellsGroup Class : examples/4-schedules/4e-Tutorial_WellsGroup_yml.ipynb
     - Cloud API:
-      - Introduction: tutorial/5a-CloudAPI.md
+      - Introduction: examples/5-CloudAPI/5a-CloudAPI.ipynb
   - Release Notes: release_notes.md
 
 repo_url: https://github.com/scuervo91/dcapy
@@ -50,6 +50,7 @@ repo_name: scuervo91/dcapy
 
 plugins:
   - search
+  - mkdocs-jupyter
 
 markdown_extensions:
   - admonition
