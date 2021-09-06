@@ -697,10 +697,10 @@ class Arps(BaseModel,DCA):
                 ad_kw[k]=v
 
         #Plotting
-        time_axis = f.index.to_timestamp() if self.format()=='date' else f.index
-        sns.lineplot(data=f, x=time_axis, y='oil_rate', hue='iteration',**rate_kw, ax=dax)
+        f['time_axis'] = f.index.to_timestamp() if self.format()=='date' else f.index.values
+        sns.lineplot(data=f, x='time_axis', y='oil_rate', hue='iteration',**rate_kw, ax=dax)
         #dax.plot(time_axis,f['oil_rate'],**rate_kw)   
 
         if cum:
             cumax=dax.twinx()
-            cumax.plot(time_axis,f['oil_cum'],**cum_kw)  
+            cumax.plot(f['time_axis'],f['oil_cum'],**cum_kw)  

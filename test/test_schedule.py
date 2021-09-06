@@ -160,7 +160,7 @@ class TestSchedule(unittest.TestCase):
             'iter':10
         }
         s2 = Scenario(**s2_dict)
-        s2_f = s2.generate_forecast(iter=10, seed=21)
+        s2_f = s2.generate_forecast(freq_output='A',iter=10, seed=21)
         s2_c = s2.generate_cashflow(freq_output='A')
         
         r = {'index': {0: 0.1499999999999999,

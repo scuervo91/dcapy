@@ -471,7 +471,9 @@ class Scenario(ScheduleBase):
 
 		scenario_forecast = pd.concat(list_forecast, axis=0)
 		scenario_forecast['scenario'] = self.name
-		fr_freq = scenario_forecast.index.freqstr[0]
+
+		fr_freq = freq_output
+		#fr_freq = scenario_forecast.index.freqstr[0]
 
 		if isinstance(scenario_forecast.index[0],pd.Period):
 			self.forecast = Forecast(freq=fr_freq,**scenario_forecast.to_timestamp().reset_index().to_dict(orient='list'))
@@ -684,7 +686,8 @@ class Well(ScheduleBase):
    
 		well_forecast = pd.concat(list_forecast, axis=0)
 		well_forecast['well'] = self.name
-		fr_freq = well_forecast.index.freqstr[0]
+		fr_freq = freq_output
+		#fr_freq = well_forecast.index.freqstr[0]
 		if isinstance(well_forecast.index[0],pd.Period):
 			self.forecast = Forecast(freq=fr_freq,**well_forecast.to_timestamp().reset_index().to_dict(orient='list'))
 		else:
@@ -869,7 +872,8 @@ class WellsGroup(ScheduleBase):
 			list_forecast.append(_f)
    
 		wells_forecast = pd.concat(list_forecast, axis=0)
-		fr_freq = wells_forecast.index.freqstr[0]
+
+		fr_freq = freq_output
 		if isinstance(wells_forecast.index[0],pd.Period):
 			self.forecast = Forecast(freq=fr_freq,**wells_forecast.to_timestamp().reset_index().to_dict(orient='list'))
 		else:
