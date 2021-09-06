@@ -44,6 +44,10 @@ nav:
     - Cloud API:
       - Introduction: examples/5-CloudAPI/5a-CloudAPI.ipynb
   - Release Notes: release_notes.md
+  - Notebooks Test Releases: 
+    - 0.1.5: examples/6-FixesNotebooks/0-1-5_test_release.ipynb
+
+  
 
 repo_url: https://github.com/scuervo91/dcapy
 repo_name: scuervo91/dcapy
