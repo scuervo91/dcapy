@@ -1,10 +1,13 @@
 # Release Notes
 
+## 0.1.6
+### Fixes
+* 👷 Fix Schedule Cashflow generator when using relative dates with multiple time frequencies
+
 ## 0.1.5
 ### Fixes
 * 👷 Fix Schedule module when using relative time series instead of dates.
 * 👷 Fix when plotting the dca.Arps method.
-
 
 ## 0.1.4
 ### Fixes
