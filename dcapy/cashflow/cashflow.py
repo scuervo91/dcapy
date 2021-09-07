@@ -70,15 +70,17 @@ class CashFlow(BaseModel):
             periods = len(self.const_value)
         if self.periods:
             if self.periods < 0: # When the cashflow is at the end when abandoning a well
-                prng = pd.period_range(start=self.end, periods=abs(self.periods), freq=self.freq_input) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
+                prng = pd.period_range(start=self.end, periods=abs(self.periods), freq=self.freq_input) if isinstance(self.start,date) else np.arange(self.end, self.end+1,1)
             else:   
-                prng = pd.period_range(start=self.start, periods=self.periods, freq=self.freq_input) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
+                prng = pd.period_range(start=self.start, periods=self.periods, freq=self.freq_input) if isinstance(self.start,date) else np.arange(self.start, self.start+self.periods,1)
         else:
-            prng = pd.period_range(start=self.start, end=self.end, periods=self.periods, freq=self.freq_input) if isinstance(self.start,date) else np.arange(self.start, self.end+1,c)
+            prng = pd.period_range(start=self.start, end=self.end, periods=self.periods, freq=self.freq_input) if isinstance(self.start,date) else np.arange(self.start, self.end+1,1)
         periods = len(prng)
         if not isinstance(self.const_value, list):
             const_value = [self.const_value] * periods
-        time_series = pd.Series(data=self.const_value, index=prng, dtype=np.float64)
+        else:
+            const_value = self.const_value
+        time_series = pd.Series(data=const_value, index=prng, dtype=np.float64)
 
         #If the change points exists. Iterate overt the chgpts as zip to
         #assign each index to corresponding cashflow time
@@ -99,7 +101,9 @@ class CashFlow(BaseModel):
         #the desired period of time
         if isinstance(self.start,date):
             time_series = time_series.to_timestamp().to_period(freq_output).groupby(level=0).agg(agg)
-
+        else:
+            time_series.index = np.floor(time_series.index.values * converter_factor(freq_output,self.freq_input))
+            time_series = time_series.groupby(level=0).agg(agg)
         return time_series
     
     def irr(self,freq_output=None):

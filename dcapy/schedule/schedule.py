@@ -304,12 +304,12 @@ class Period(ScheduleBase):
 					#set the name
 					cashflow_dict.update({
 						'name':f'{param.name}_{csh_name}',
-						'start':_forecast_i.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.min(),
-						'end':_forecast_i.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.max(),
+						'start':_forecast_i.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.min()*converter_factor(freq_output,self.freq_input),
+						'end':_forecast_i.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast_i.index.max()*converter_factor(freq_output,self.freq_input),
 						'freq_output':freq_output,'freq_input':freq_output
 					})
-					p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
-					steps = len(p_range)
+					#p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
+					#steps = len(p_range)
 					param_value = param.get_value(i,freq_output=freq_output, seed=seed, ppf=ppf)
 					param_wi = param.get_wi(i,freq_output=freq_output, seed=seed, ppf=ppf)
      
@@ -563,12 +563,12 @@ class Scenario(ScheduleBase):
 				cashflow_dict = {}
 				cashflow_dict.update({
 					'name':gparam.name,
-					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
-					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
+					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min()*converter_factor(freq_output,self.freq_input),
+					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max()*converter_factor(freq_output,self.freq_input),
 					'freq_output':freq_output, 'freq_input':freq_output
 				})
-				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
-				steps = len(p_range)
+				#p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
+				#steps = len(p_range)
 				param_value = gparam.get_value(i,freq_output=freq_output, ppf=ppf, seed=seed)
 				param_wi = gparam.get_wi(i,freq_output=freq_output, ppf=ppf, seed=seed)
 
@@ -747,12 +747,12 @@ class Well(ScheduleBase):
 				cashflow_dict = {}
 				cashflow_dict.update({
 					'name':gparam.name,
-					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
-					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
+					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min()*converter_factor(freq_output,self.freq_input),
+					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max()*converter_factor(freq_output,self.freq_input),
 					'freq_output':freq_output, 'freq_input':freq_output
 				})
-				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
-				steps = len(p_range)
+				#p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
+				#steps = len(p_range)
 				param_value = gparam.get_value(i,freq_output=freq_output, ppf=ppf, seed=seed)
 				param_wi = gparam.get_wi(i,freq_output=freq_output, ppf=ppf, seed=seed)
     
@@ -948,12 +948,12 @@ class WellsGroup(ScheduleBase):
 				cashflow_dict = {}
 				cashflow_dict.update({
 					'name':gparam.name,
-					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min(),
-					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max(),
+					'start':_forecast.index.min().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.min()*converter_factor(freq_output,self.freq_input),
+					'end':_forecast.index.max().strftime('%Y-%m-%d') if is_date_mode else _forecast.index.max()*converter_factor(freq_output,self.freq_input),
 					'freq_output':freq_output, 'freq_input':freq_output
 				})
-				p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
-				steps = len(p_range)
+				#p_range = pd.period_range(start=cashflow_dict['start'], end=cashflow_dict['end'], freq=freq_output)
+				#steps = len(p_range)
 				param_value = gparam.get_value(i,freq_output=freq_output, ppf=ppf, seed=seed)
 				param_wi = gparam.get_wi(i,freq_output=freq_output, ppf=ppf, seed=seed)
 
