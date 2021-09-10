@@ -219,6 +219,7 @@ class Period(ScheduleBase):
 		else:
 
 			self.forecast = Forecast(freq=freq_output,**_forecast.to_timestamp().reset_index().to_dict(orient='list'))
+   
 		return _forecast
 
 	def get_end_dates(self):
@@ -491,9 +492,12 @@ class Scenario(ScheduleBase):
 
 		n = []
 		for i in _periods:
-			n.append(np.array(self.periods[i].forecast.iteration).max())
+			n.append(np.array(self.periods[i].forecast.iteration).max()+1)
+			if self.periods[i].cashflow_params is not None:
+				for j in self.periods[i].cashflow_params:
+					n.append(j.iter)
 
-		return np.array(n).max() + 1
+		return np.broadcast_shapes(*n)[0]
 
 
 	def generate_cashflow(self,periods:list = None, freq_output=None, add_name=None, seed=None, ppf=None, add_cash_params:list=None):
