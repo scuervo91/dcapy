@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.7
+### Fixes
+* 👷 Fix Broadcast shapes when provide multiple cashflow iteration and only one forecast
+
 ## 0.1.6
 ### Fixes
 * 👷 Fix Schedule Cashflow generator when using relative dates with multiple time frequencies
