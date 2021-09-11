@@ -375,7 +375,7 @@ class TestSchedule(unittest.TestCase):
         r = np.array([-9.65263710e+06,  2.09036981e+07,  4.34884735e+07,  7.09743677e+07,
             8.67308430e+07,  9.95260309e+07,  1.05163157e+08,  1.08640398e+08,
             1.13126400e+08,  1.12473869e+08])
-        
-        assert_frame_equal(pd.DataFrame(cwn[0].fcf()['cum_fcf'].values), pd.DataFrame(r))
+        print(cwn[0].fcf(freq_output='A')['cum_fcf'].values)
+        assert_frame_equal(pd.DataFrame(cwn[0].fcf(freq_output='A')['cum_fcf'].values), pd.DataFrame(r))
 
             

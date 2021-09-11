@@ -166,10 +166,7 @@ class CashFlowParams(BaseModel):
             return self.value.get_sample(size=1, seed=seed, ppf=ppf)
         if isinstance(self.value,(Brownian,MeanReversion,GeometricBrownian)):
             df = self.value.generate(processes=i+1,freq_output=freq_output,interval=interval,seed=seed)
-            if isinstance(df.index[0].item(),int):
-                idx = df.index.values.tolist()
-            else:
-                idx = [i.to_timestamp().strftime('%Y-%m-%d') for i in df.index]
+            idx = [i.to_timestamp().strftime('%Y-%m-%d') if ~isinstance(i,int) else i for i in df.index]
             return ChgPts(date=idx, value=df.iloc[:,i].values.tolist())
 
     def get_wi(self,i:int, seed:int=None, freq_output:str=None, interval:float=None, ppf=None):
