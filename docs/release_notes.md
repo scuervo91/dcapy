@@ -1,5 +1,9 @@
 # Release Notes
 
+## 0.1.8
+### Fixes
+* 👷 Fix Weiner Proccesses index when using with Schedule module
+
 ## 0.1.7
 ### Fixes
 * 👷 Fix Broadcast shapes when provide multiple cashflow iteration and only one forecast

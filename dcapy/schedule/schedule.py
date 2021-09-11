@@ -345,7 +345,7 @@ class Period(ScheduleBase):
 							else:
 								cashflow_dict.update({
 									'chgpts':{
-										'date':_array_values.index.strftime('%Y-%m-%d').tolist() if is_date_mode else _array_values.index,
+										'date':_array_values.index.strftime('%Y-%m-%d').tolist() if is_date_mode else _array_values.index.values.tolist(),
 										'value':_array_values.tolist()
 									}
 								})
@@ -375,7 +375,6 @@ class Period(ScheduleBase):
 				for key in cashflow_model_dict:
 					if len(cashflow_model_dict[key]) == 0:
 						del cashflow_model_dict[key]
-				
 				cashflow_model = CashFlowModel(**cashflow_model_dict)
 				list_cashflow_model.append(cashflow_model)
 
