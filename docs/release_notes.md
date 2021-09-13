@@ -1,5 +1,10 @@
 # Release Notes
 
+## 0.1.9
+### Fixes
+* 👷 Fix Percentiles functionality when calling forecast
+
+
 ## 0.1.8
 ### Fixes
 * 👷 Fix Weiner Proccesses index when using with Schedule module
