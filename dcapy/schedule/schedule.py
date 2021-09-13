@@ -209,7 +209,7 @@ class Period(ScheduleBase):
 		_forecast = self.dca.forecast(
 			time_list = self.time_list,start=self.start, end=self.end, freq_input=self.freq_input, 
 			freq_output=freq_output, rate_limit=self.rate_limit, 
-   			cum_limit=self.cum_limit, iter=iter, ppf=self.ppf, seed=seed
+   			cum_limit=self.cum_limit, iter=iter, ppf=ppf, seed=seed
 		)
 		_forecast['period'] = self.name
 		
