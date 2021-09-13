@@ -128,9 +128,9 @@ class ProbVar(BaseModel):
         if seed is None:
             seed = self.seed
 
-        if size:
-            return getattr(stats,self.dist)(**self.kw).rvs(size=size,random_state=seed)*self.factor
-        elif ppf is not None:
+        if ppf is not None:
             return getattr(stats,self.dist)(**self.kw).ppf(ppf)*self.factor
+        elif size:
+            return getattr(stats,self.dist)(**self.kw).rvs(size=size,random_state=seed)*self.factor
         else:
             return getattr(stats,self.dist)(**self.kw).mean()*self.factor
