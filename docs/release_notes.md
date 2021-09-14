@@ -2,6 +2,11 @@
 
 ## 0.1.9
 ### Fixes
+* 👷 Fix bug when printing
+
+
+## 0.1.9
+### Fixes
 * 👷 Fix Percentiles functionality when calling forecast
 
 
