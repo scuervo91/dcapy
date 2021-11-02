@@ -607,7 +607,7 @@ class Arps(BaseModel,DCA):
             y_filter = y[total_filter==0]
             
             #Optimization process
-            popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=([0.,0.,b_bounds[0]], [np.inf, np.inf, b_bounds[0]]))
+            popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=([0.,0.,b_bounds[0]], [np.inf, np.inf, b_bounds[1]]))
             #Assign the results to the Class
             self.qi = {'dist':'norm','kw':{'loc':popt[0],'scale':np.sqrt(np.diag(pcov)[0])}} if prob else popt[0] 
             self.di = {'dist':'norm','kw':{'loc':popt[1],'scale':np.sqrt(np.diag(pcov)[1])}} if prob else popt[1]
