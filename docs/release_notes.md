@@ -1,6 +1,10 @@
 # Release Notes
 
-## 0.1.9
+## 0.1.10
+### Feature
+* 🎨 When fitting a Arps class you can now choose the upper and lower bounds of parameter b
+
+## 0.1.10
 ### Fixes
 * 👷 Fix bug when printing
 
