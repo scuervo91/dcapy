@@ -549,7 +549,7 @@ class Arps(BaseModel,DCA):
         return _forecast_df.dropna(axis=0,subset=['oil_rate'])
 
     def fit(self,df:pd.DataFrame=None,time:Union[str,np.ndarray,pd.Series]=None,
-            rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={},prob=False, beta=0):
+            rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={},prob=False, beta=0,b_bounds=[0.,1.]):
         """fit fit a production time series to a parameterized Arps Ecuation. Optionally,
         a anomaly detection filter can be passed. It returns an Arps Instance with the fitted
         attributes.
@@ -563,7 +563,7 @@ class Arps(BaseModel,DCA):
             kw_filter (dict, optional): [description]. Defaults to {}.
             prob (bool, optional): [description]. Defaults to False.
             beta (int, optional): [description]. Defaults to 0.
-
+            b_bounds (list): bounds for b parameter
         Returns:
             [type]: [description]
         """
@@ -607,7 +607,7 @@ class Arps(BaseModel,DCA):
             y_filter = y[total_filter==0]
             
             #Optimization process
-            popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=(0.0, [np.inf, np.inf, 1]))
+            popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=([0.,0.,b_bounds[0]], [np.inf, np.inf, b_bounds[0]]))
             #Assign the results to the Class
             self.qi = {'dist':'norm','kw':{'loc':popt[0],'scale':np.sqrt(np.diag(pcov)[0])}} if prob else popt[0] 
             self.di = {'dist':'norm','kw':{'loc':popt[1],'scale':np.sqrt(np.diag(pcov)[1])}} if prob else popt[1]
