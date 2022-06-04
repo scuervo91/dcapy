@@ -1,8 +1,14 @@
 # Release Notes
 
-## 0.1.10
+## 0.1.11
 ### Feature
-* 🎨 When fitting a Arps class you can now choose the upper and lower bounds of parameter b
+* 🎨 When fitting a Arps class you can now choose the upper and lower 
+bounds of parameter b
+* 🎨 Adding option to provide change points to timeseries and fit every 
+segment and forecasting the last one
+*🎨 Adding the option to provide in a single DataFrame production for 
+multiple wells, estimate the segments and create an schedule Object 
+
 
 ## 0.1.10
 ### Fixes
