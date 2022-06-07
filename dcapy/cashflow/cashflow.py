@@ -57,6 +57,19 @@ class CashFlow(BaseModel):
         arbitrary_types_allowed = True
         validate_assignment = True
         
+    @classmethod
+    def from_series(cls,series,freq_input='M',**kwargs):
+        series.sort_index(inplace=True)
+        return cls(
+            name=series.name,
+            const_value=series.values,
+            start=series.index[0],
+            end=series.index[-1],
+            freq_input=freq_input,
+            **kwargs
+        )
+        
+        
     def get_cashflow(self,freq_output=None, agg='sum'):
         #Get the date format according the frequency specified
         if freq_output is None:
