@@ -62,7 +62,7 @@ class CashFlow(BaseModel):
         series.sort_index(inplace=True)
         return cls(
             name=series.name,
-            const_value=series.values,
+            const_value=series.values.tolist(),
             start=series.index[0],
             end=series.index[-1],
             freq_input=freq_input,
