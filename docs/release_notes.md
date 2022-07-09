@@ -1,5 +1,8 @@
 # Release Notes
 
+# 0.1.12
+### Features
+* 🎨 Create cashflows from dataframe
 ## 0.1.11
 ### Feature
 * 🎨 When fitting a Arps class you can now choose the upper and lower 
