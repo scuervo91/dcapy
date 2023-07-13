@@ -609,8 +609,9 @@ class Arps(BaseModel,DCA):
             #Optimization process
             popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=([0.,0.,b_bounds[0]], [np.inf, np.inf, b_bounds[1]]))
             #Assign the results to the Class
+            di_factor = converter_factor('D', self.freq_di)
             self.qi = {'dist':'norm','kw':{'loc':popt[0],'scale':np.sqrt(np.diag(pcov)[0])}} if prob else popt[0] 
-            self.di = {'dist':'norm','kw':{'loc':popt[1],'scale':np.sqrt(np.diag(pcov)[1])}} if prob else popt[1]
+            self.di = {'dist':'norm','kw':{'loc':popt[1]*di_factor,'scale':np.sqrt(np.diag(pcov)[1])*di_factor}} if prob else popt[1]*di_factor
             self.b = {'dist':'norm','kw':{'loc':popt[2],'scale':np.sqrt(np.diag(pcov)[2])}} if prob else popt[2]
             self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],(np.datetime64,date)) else x[total_filter==0][0]
         else:
@@ -628,9 +629,10 @@ class Arps(BaseModel,DCA):
             
             #Optimization process
             popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=(0.0, [np.inf, np.inf]))
-   
+            #Assign the results to the Class
+            di_factor = converter_factor('D', self.freq_di)
             self.qi = {'dist':'norm','kw':{'loc':popt[0],'scale':np.sqrt(np.diag(pcov)[0])}} if prob else popt[0] 
-            self.di = {'dist':'norm','kw':{'loc':popt[1],'scale':np.sqrt(np.diag(pcov)[1])}} if prob else popt[1]
+            self.di = {'dist':'norm','kw':{'loc':popt[1]*di_factor,'scale':np.sqrt(np.diag(pcov)[1])*di_factor}} if prob else popt[1]*di_factor
             self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],(np.datetime64,date)) else x[total_filter==0][0]
             self.b = b
             
