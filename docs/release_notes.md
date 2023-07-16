@@ -1,5 +1,12 @@
 # Release Notes
 
+# 0.1.13
+
+### Fixes
+👷 Ti (Smoothing Function): Resolved an issue with the Ti that affected the function of smoothing (exponential weighted average). The previous implementation incorrectly labeled the first value to be deleted. This issue has been fixed by utilizing the built-in function in pandas' ewm method. The beta parameter now acts as the alpha parameter in the pandas function. (GitHub issue #123)
+
+### Feature
+di_freq Support: Introduced a new feature to fit data with dates of different di_freq. 
 # 0.1.12
 ### Features
 * 🎨 Create cashflows from dataframe
