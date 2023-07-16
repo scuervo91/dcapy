@@ -85,24 +85,7 @@ def arps_hyp_cumulative(time_array:np.ndarray,qi:float,di:float,b:float,ti=0)->n
     g = np.power(b*di*time_array+1,(b-1)/b)
     h = np.power(b*di*ti+1,(b-1)/b)
     return f*(g-h)
-    """arps_exp Calculate the cumulative of Armonic , b=1, Arps Declination
 
-    Parameters
-    ----------
-    qi : float
-        Initial rate
-    di : float
-        Initial Declination
-    b : float
-        Arps Coeficient
-    time_array : np.ndarray
-        Array of numbers that represents the periods of timeto calculate rate
-
-    Returns
-    -------
-    np.ndarray
-        Array of the cumulative calculated for the time_array
-    """
 def arps_arm_cumulative(time_array:np.ndarray,qi:float,di:float,b:float,ti=0)->np.ndarray:
     """arps_arm_cumulative Calculate the cumulative of Armonic , b=1, Arps Declination
 
@@ -549,7 +532,7 @@ class Arps(BaseModel,DCA):
         return _forecast_df.dropna(axis=0,subset=['oil_rate'])
 
     def fit(self,df:pd.DataFrame=None,time:Union[str,np.ndarray,pd.Series]=None,
-            rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={},prob=False, beta=0,b_bounds=[0.,1.]):
+            rate:Union[str,np.ndarray,pd.Series]=None,b:float=None, filter=None,kw_filter={},prob=False, beta=1,b_bounds=[0.,1.]):
         """fit fit a production time series to a parameterized Arps Ecuation. Optionally,
         a anomaly detection filter can be passed. It returns an Arps Instance with the fitted
         attributes.
@@ -573,8 +556,9 @@ class Arps(BaseModel,DCA):
         #Check inputs
         x = df[time].values if isinstance(time,str) else time 
         yb = df[rate].values if isinstance(rate,str) else rate
+        di_factor = converter_factor('D', self.freq_di)
         #Expotential weighted average. If beta is 1 there's no effect
-        y = exp_wgh_avg(yb,beta)
+        y = pd.Series(yb).ewm(alpha=beta).mean().values
 
         #Keep production greater than 0
         zeros_filter_array = np.zeros(y.shape)
@@ -605,12 +589,12 @@ class Arps(BaseModel,DCA):
             #Apply the Filters
             x_filter = _x[total_filter==0]-_x[total_filter==0][0]
             y_filter = y[total_filter==0]
-            
+                       
             #Optimization process
             popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=([0.,0.,b_bounds[0]], [np.inf, np.inf, b_bounds[1]]))
             #Assign the results to the Class
             self.qi = {'dist':'norm','kw':{'loc':popt[0],'scale':np.sqrt(np.diag(pcov)[0])}} if prob else popt[0] 
-            self.di = {'dist':'norm','kw':{'loc':popt[1],'scale':np.sqrt(np.diag(pcov)[1])}} if prob else popt[1]
+            self.di = {'dist':'norm','kw':{'loc':popt[1]*di_factor,'scale':np.sqrt(np.diag(pcov)[1])*di_factor}} if prob else popt[1]*di_factor
             self.b = {'dist':'norm','kw':{'loc':popt[2],'scale':np.sqrt(np.diag(pcov)[2])}} if prob else popt[2]
             self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],(np.datetime64,date)) else x[total_filter==0][0]
         else:
@@ -628,9 +612,9 @@ class Arps(BaseModel,DCA):
             
             #Optimization process
             popt, pcov = curve_fit(cost_function, x_filter, y_filter, bounds=(0.0, [np.inf, np.inf]))
-   
+            #Assign the results to the Class
             self.qi = {'dist':'norm','kw':{'loc':popt[0],'scale':np.sqrt(np.diag(pcov)[0])}} if prob else popt[0] 
-            self.di = {'dist':'norm','kw':{'loc':popt[1],'scale':np.sqrt(np.diag(pcov)[1])}} if prob else popt[1]
+            self.di = {'dist':'norm','kw':{'loc':popt[1]*di_factor,'scale':np.sqrt(np.diag(pcov)[1])*di_factor}} if prob else popt[1]*di_factor
             self.ti = pd.Timestamp(x[total_filter==0][0]) if isinstance(x[total_filter==0][0],(np.datetime64,date)) else x[total_filter==0][0]
             self.b = b
             
