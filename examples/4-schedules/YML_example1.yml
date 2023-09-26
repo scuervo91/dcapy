@@ -1,0 +1,325 @@
+name: fdp_field
+type: wellsgroup
+wells:
+  DC2:
+    name: DC2
+    scenarios:
+      base:
+        name: base
+        periods:
+          pdp:
+            dca:
+              bsw: 0.9783
+              fluid_rate: 5192.343117182031
+              slope: 3.986053847389352e-05
+              ti: '2021-04-01'
+            end: '2030-12-31'
+            freq_input: D
+            freq_output: D
+            name: pdp
+            start: '2021-04-01'
+            rate_limit: 50
+            cashflow_params:
+            - name: capex_abandon
+              periods: -1
+              target: capex
+              value: -200000.0
+  DC3:
+    name: DC3
+    scenarios:
+      base:
+        name: base
+        periods:
+          pdp:
+            dca:
+              bsw: 0.8935
+              fluid_rate: 3101.6068269182692
+              slope: 1.1341265851141962e-05
+              ti: '2021-04-01'
+            end: '2030-12-31'
+            freq_input: D
+            freq_output: D
+            name: pdp
+            start: '2021-04-01'
+            rate_limit: 50
+            cashflow_params:
+            - name: capex_abandon
+              periods: -1
+              target: capex
+              value: -200000.0
+  DC4:
+    name: DC4
+    scenarios:
+      base:
+        name: base
+        periods:
+          pdp:
+            dca:
+              bsw: 0.9863
+              fluid_rate: 7304.560639994402
+              slope: 4.086888672335466e-05
+              ti: '2021-04-01'
+            end: '2030-12-31'
+            freq_input: D
+            freq_output: D
+            name: pdp
+            start: '2021-04-01'
+            rate_limit: 50
+            cashflow_params:
+            - name: capex_abandon
+              periods: -1
+              target: capex
+              value: -200000.0
+  DC5:
+    name: DC5
+    scenarios:
+      base:
+        name: base
+        periods:
+          pdp:
+            dca:
+              bsw: 0.9648
+              fluid_rate: 5710.712047244095
+              slope: 1.9260822570459275e-05
+              ti: '2021-04-01'
+            end: '2030-12-31'
+            freq_input: D
+            freq_output: D
+            name: pdp
+            start: '2020-04-01'
+            rate_limit: 50
+            cashflow_params:
+            - name: capex_abandon
+              periods: -1
+              target: capex
+              value: -200000.0
+  well-1:
+    name: well-1
+    scenarios:
+      highfr:
+        name: highfr
+        periods:
+          fm1:
+            cashflow_params:
+            - name: capex
+              periods: 1
+              target: capex
+              value: -4000000.0
+            dca:
+              bsw:
+                dist: uniform
+                kw:
+                  loc: 0.4
+                  scale: 0.4
+              fluid_rate: 6500.0
+              slope:
+              - 3.0e-05
+              ti: '2022-01-01'
+            end: '2027-01-01'
+            name: fm1
+            rate_limit: 200.0
+            start: '2022-01-01'
+          fm2:
+            cashflow_params:
+            - name: capex_wo
+              periods: 1
+              target: capex
+              value: -600000.0
+            - name: capex_abandon
+              periods: -1
+              target: capex
+              value: -200000.0
+            dca:
+              bsw:
+                dist: uniform
+                kw:
+                  loc: 0.4
+                  scale: 0.4
+              fluid_rate: 6500.0
+              slope:
+              - 5.0e-05
+              ti: '2022-01-01'
+            depends:
+              period: fm1
+            end: '2030-01-01'
+            name: fm2
+            start: '2022-01-01'
+      mediumfr:
+        name: mediumfr
+        periods:
+          fm1:
+            cashflow_params:
+            - name: capex_drill
+              periods: 1
+              target: capex
+              value: -4000000.0
+            dca:
+              bsw:
+                dist: uniform
+                kw:
+                  loc: 0.4
+                  scale: 0.4
+              fluid_rate: 3500.0
+              slope:
+              - 3.0e-06
+              ti: '2022-01-01'
+            end: '2030-01-01'
+            name: fm1
+            rate_limit: 200.0
+            start: '2022-01-01'
+          fm2:
+            cashflow_params:
+            - name: capex_wo
+              periods: 1
+              target: capex
+              value: -600000.0
+            - name: capex_abandon
+              periods: -1
+              target: capex
+              value: -200000.0
+            dca:
+              bsw:
+                dist: uniform
+                kw:
+                  loc: 0.4
+                  scale: 0.4
+              fluid_rate: 2500.0
+              slope:
+              - 5.0e-06
+              ti: '2022-01-01'
+            depends:
+              period: fm1
+            end: '2030-01-01'
+            name: fm2
+            start: '2022-01-01'
+  well-2:
+    name: well-2
+    scenarios:
+      highfr:
+        name: highfr
+        periods:
+          fm2:
+            cashflow_params:
+            - name: capex_drill
+              periods: 1
+              target: capex
+              value: -4000000.0
+            dca:
+              bsw:
+                dist: uniform
+                kw:
+                  loc: 0.4
+                  scale: 0.4
+              fluid_rate: 6500.0
+              slope:
+              - 5.0e-05
+              ti: '2022-01-01'
+            end: '2030-01-01'
+            name: fm2
+            rate_limit: 200.0
+            start: '2022-01-01'
+          fm1:
+            cashflow_params:
+            - name: capex_wo
+              periods: 1
+              target: capex
+              value: -600000.0
+            - name: capex_abandon
+              periods: -1
+              target: capex
+              value: -200000.0
+            dca:
+              bsw:
+                dist: uniform
+                kw:
+                  loc: 0.4
+                  scale: 0.4
+              fluid_rate: 6500.0
+              slope:
+              - 3.0e-05
+              ti: '2022-01-01'
+            depends:
+              period: fm2
+            end: '2030-01-01'
+            name: fm1
+            start: '2022-01-01'
+      mediumfr:
+        name: mediumfr
+        periods:
+          fm2:
+            cashflow_params:
+            - name: capex_drill
+              periods: 1
+              target: capex
+              value: -4000000.0
+            dca:
+              bsw:
+                dist: uniform
+                kw:
+                  loc: 0.4
+                  scale: 0.4
+              fluid_rate: 2500.0
+              slope:
+              - 5.0e-06
+              ti: '2022-01-01'
+            end: '2030-01-01'
+            name: fm2
+            rate_limit: 200.0
+            start: '2022-01-01'
+          fm1:
+            cashflow_params:
+            - name: capex_wo
+              periods: 1
+              target: capex
+              value: -600000.0
+            - name: capex_abandon
+              periods: -1
+              target: capex
+              value: -200000.0
+            dca:
+              bsw:
+                dist: uniform
+                kw:
+                  loc: 0.4
+                  scale: 0.4
+              fluid_rate: 3500.0
+              slope:
+              - 3.0e-06
+              ti: '2022-01-01'
+            depends:
+              period: fm2
+            end: '2030-01-01'
+            name: fm1
+            start: '2022-01-01'
+cashflow_params:
+- name: fix_opex
+  target: opex
+  value: -11000.
+  freq_value: 'M'
+- iter: 1
+  multiply: oil_volume
+  name: var_opex
+  target: opex
+  value: -8.0
+- multiply: oil_volume
+  name: income
+  target: income
+  value: 
+    initial_condition: 60 
+    ti: '2021-04-01'
+    steps: 11
+    generator:
+      dist: norm
+      kw:
+        loc: 0.
+        scale: 13.13
+    m: 46.77
+    eta: 0.112653 
+    freq_input: A
+  wi: 0.92
+- name: buy
+  periods: 1
+  target: capex
+  value: -15500000
+  general: True
+seed: 21
