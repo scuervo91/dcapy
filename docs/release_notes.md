@@ -1,5 +1,9 @@
 # Release Notes
 
+# 0.1.14
+### Features
+* 🎨 add compatibility to python 3.9, 3.10, 3.11. PR [#26](https://github.com/scuervo91/dcapy/pull/26) by [ne-warwick](https://github.com/ne-warwick)
+
 # 0.1.13
 
 ### Fixes
