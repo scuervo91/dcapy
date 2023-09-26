@@ -362,7 +362,7 @@ class TestSchedule(unittest.TestCase):
     def test_group_wells(self):
         workdir = os.path.dirname(__file__)
         with open(os.path.join(workdir,'data','FDP_example1.yml'),'r') as file:
-            lp_dict = yaml.load(file)
+            lp_dict = yaml.safe_load(file)
         
         lp = model_from_dict(lp_dict)
         
