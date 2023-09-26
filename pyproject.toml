@@ -31,11 +31,8 @@ numpy-financial = "^1.0.0"
 # fixing to 6 and above owing to change in test_schedule needed to support 3.10
 PyYAML = "^6.0.0"
 
-# statsmodels (0.12.2) not supporting PEP 517 builds
-statsmodels = [
-    {version = "^0.13", python = "<3.10"},
-    {version = "^0.13", python = "^3.10"}
-]
+# statsmodels (0.12.2) not supporting PEP 517 builds. 0.13 works with python 3.8.
+statsmodels = "^0.13"
 openpyxl = "^3.0.7"
 pyDOE2 = "^1.3.0"
 rich = "^10.2.1"
